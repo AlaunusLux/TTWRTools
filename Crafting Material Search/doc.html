@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Materials Search</title>
+  </head>
+  <body>
+    <fieldset>
+      <legend>Choose crafting materials to display:</legend>
+
+      <div>
+        <input
+          type="checkbox"
+          id="reagents"
+          name="reagents"
+          onchange="searchCraftables()"
+        />
+        <label for="reagents">Reagents</label>
+      </div>
+
+      <div>
+        <input
+          type="checkbox"
+          id="wood"
+          name="wood"
+          onchange="searchCraftables()"
+        />
+        <label for="wood">Wood</label>
+      </div>
+
+      <div>
+        <input
+          type="checkbox"
+          id="magica"
+          name="magica"
+          onchange="searchCraftables()"
+        />
+        <label for="magica">Magica</label>
+      </div>
+
+      <div>
+        <input
+          type="checkbox"
+          id="leather"
+          name="leather"
+          onchange="searchCraftables()"
+        />
+        <label for="leather">Leather</label>
+      </div>
+
+      <div>
+        <input
+          type="checkbox"
+          id="cloth"
+          name="cloth"
+          onchange="searchCraftables()"
+        />
+        <label for="cloth">Cloth</label>
+      </div>
+
+      <div>
+        <input
+          type="checkbox"
+          id="metal"
+          name="metal"
+          onchange="searchCraftables()"
+        />
+        <label for="metal">Metal</label>
+      </div>
+    </fieldset>
+    <hr />
+    <div><label>Paste Shop Data here:</label></div>
+    <textarea
+      id="search-keys"
+      rows="10"
+      cols="60"
+      onkeyup="searchCraftables()"
+    ></textarea>
+    <div id="results-display"></div>
+    <br />
+    <div id="purchase-log-output"></div>
+    <br /><br />
+    <div id="unmatched-items"></div>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -109,17 +109,19 @@
   </style>
 </head>
 <body>
-  <h1>D&D Spell Scribing Calculator</h1>
+    <h1>D&D Spell Scribing Calculator</h1>
   
   <div class="player-info">
     <label for="playerName">Player Name:</label>
     <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
+    <label style="margin-left: 20px;">
+      <input type="checkbox" id="combinedModOutput" checked> Combined modifier output
+    </label>
   </div>
   
   <button id="addBook">+ Add Spellbook</button>
   <div id="spellbooksContainer"></div>
   <div id="output"></div>
   <div id="discordMessages"></div>
-
 </body>
 </html>

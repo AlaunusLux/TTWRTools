@@ -1,10 +1,6 @@
-
-
 const baseGP = 50;
 const scribingFee = 20;
 const baseHours = 2;
-const simpleModOutput = false;
-const combinedModOutput = true;
 
 let bookCount = 0;
 const spellbooks = [];
@@ -16,8 +12,6 @@ function createSpellbook() {
   container.className = "spellbook";
   container.id = `spellbook${bookId}`;
 
-
-  //add input that reveals if Badge is checked, for generating "used spell slot to move badge" messages?
   container.innerHTML = `
     <div style="display: flex; align-items: center; gap: 10px;">
       <h3 class="bookHeading">Personal Spellbook ${bookId}</h3>
@@ -27,9 +21,19 @@ function createSpellbook() {
     
     <label>Total Spell Levels (if not adding individually): <input type="number" class="totalLevels" min="0" value="0"></label><br>
 
-    <label><input type="checkbox" class="wand"> Arcanist's Scribing Wand (halve gp)</label>
-    <label><input type="checkbox" class="badge"> <span class="badgeLabel">Badge of the Savant (halve gp & time)</span></label>
-    <label><input type="checkbox" class="savant"> <span class="savantLabel">Savant [Legacy] (halve gp & time)</span></label>
+    <label><input type="checkbox" class="wand"> Arcanist's Scribing Wand (halve gp)</label><br>
+    
+    <div class="badgeContainer"></div>
+    
+    <div class="savantContainer">
+      <label style="display: none;" class="savantLabel">
+        <span class="savantText">Legacy Savant:</span>
+        <select class="savantSelect" style="margin-left: 5px;">
+          <option value="">None</option>
+        </select>
+      </label>
+    </div>
+    
     <label><input type="checkbox" class="guild"> Guild Spellbook (school-locked)</label>
     <label><input type="checkbox" class="schoolLock"> <span class="schoolLockLabel">Lock to School (prevents wrong schools)</span></label><br>
     <div class="modifierWarning" style="color: red; font-size: 12px; display: none; margin-top: 5px;"></div>
@@ -49,14 +53,16 @@ function createSpellbook() {
     schoolNumber: null,
     customName: null,
     schoolLock: false,
-    savedSchoolLock: false  // Store the lock state when converting to guild
+    savedSchoolLock: false,
+    badges: {},  // Track which schools have badges: { "Evocation": true, "Abjuration": false }
+    legacySavant: null  // Track which school has legacy savant
   };
   spellbooks.push(book);
 
   // Event listeners for modifiers
-  [".wand", ".badge", ".savant", ".totalLevels"].forEach(sel => {
+  [".wand", ".totalLevels"].forEach(sel => {
     container.querySelector(sel).addEventListener("input", () => {
-      updateModifierLabelsAndWarnings(book, container);
+      updateModifierControls(book, container);
       calculateCosts();
     });
   });
@@ -85,7 +91,7 @@ function createSpellbook() {
       }
     }
     updateBookHeading(book, container);
-    updateModifierLabelsAndWarnings(book, container);
+    updateModifierControls(book, container);
     calculateCosts();
   });
 
@@ -103,7 +109,7 @@ function createSpellbook() {
         book.school = schools[0];
       }
     }
-    updateModifierLabelsAndWarnings(book, container);
+    updateModifierControls(book, container);
   });
 
   // Rename button functionality
@@ -156,7 +162,7 @@ function addSpellToBook(spell, book, container) {
   
   updateBookHeading(book, container);
   updateSpellList(book, container);
-  updateModifierLabelsAndWarnings(book, container);
+  updateModifierControls(book, container);
   calculateCosts();
 }
 
@@ -181,7 +187,7 @@ function removeSpellFromBook(spellName, book, container) {
   
   updateBookHeading(book, container);
   updateSpellList(book, container);
-  updateModifierLabelsAndWarnings(book, container);
+  updateModifierControls(book, container);
   calculateCosts();
 }
 
@@ -204,28 +210,24 @@ function updateBookHeading(book, container) {
   }
 }
 
-function updateModifierLabelsAndWarnings(book, container) {
-  const badgeLabel = container.querySelector(".badgeLabel");
+function updateModifierControls(book, container) {
+  const badgeContainer = container.querySelector(".badgeContainer");
+  const savantContainer = container.querySelector(".savantContainer");
   const savantLabel = container.querySelector(".savantLabel");
+  const savantSelect = container.querySelector(".savantSelect");
   const schoolLockLabel = container.querySelector(".schoolLockLabel");
-  const badgeCheckbox = container.querySelector(".badge");
-  const savantCheckbox = container.querySelector(".savant");
   const guildCheckbox = container.querySelector(".guild");
   const schoolLockCheckbox = container.querySelector(".schoolLock");
   const warningDiv = container.querySelector(".modifierWarning");
   
   // Get unique schools in this book
-  const schools = [...new Set(book.spells.map(s => s.school))];
+  const schools = [...new Set(book.spells.map(s => s.school))].sort();
   const primarySchool = book.school || (schools.length === 1 ? schools[0] : null);
   
-  // Update labels
+  // Update school lock label
   if (primarySchool) {
-    badgeLabel.textContent = `Badge of the Savant [${primarySchool}] (halve gp & time)`;
-    savantLabel.textContent = `${primarySchool} Savant [Legacy] (halve gp & time)`;
     schoolLockLabel.textContent = `Lock to ${primarySchool} (prevents wrong schools)`;
   } else {
-    badgeLabel.textContent = "Badge of the Savant (halve gp & time)";
-    savantLabel.textContent = "Savant [Legacy] (halve gp & time)";
     schoolLockLabel.textContent = "Lock to School (prevents wrong schools)";
   }
   
@@ -236,6 +238,84 @@ function updateModifierLabelsAndWarnings(book, container) {
     schoolLockCheckbox.parentElement.style.display = "block";
   }
   
+  // Show badges and savant for both personal and guild books
+  // Create badge checkboxes for each school
+  badgeContainer.innerHTML = "";
+  
+  // Clean up badges for schools that are no longer in the book
+  if (book.badges) {
+    Object.keys(book.badges).forEach(school => {
+      if (!schools.includes(school)) {
+        delete book.badges[school];
+      }
+    });
+  }
+  
+  schools.forEach(school => {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = `badge-${school.replace(/\s+/g, '')}`;
+    checkbox.checked = book.badges[school] || false;
+    checkbox.addEventListener("change", () => {
+      book.badges[school] = checkbox.checked;
+      calculateCosts();
+    });
+    
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(` Badge of the Savant [${school}] (halve gp & time)`));
+    label.appendChild(document.createElement("br"));
+    badgeContainer.appendChild(label);
+  });
+  
+  // Update legacy savant dropdown
+  if (schools.length > 0) {
+    savantLabel.style.display = "block";
+    
+    // Store current selection before rebuilding
+    const currentSelection = book.legacySavant;
+    
+    // Rebuild options
+    const newSelect = document.createElement("select");
+    newSelect.className = "savantSelect";
+    newSelect.style.marginLeft = "5px";
+    
+    const noneOption = document.createElement("option");
+    noneOption.value = "";
+    noneOption.textContent = "None";
+    newSelect.appendChild(noneOption);
+    
+    schools.forEach(school => {
+      const option = document.createElement("option");
+      option.value = school;
+      option.textContent = `${school} Savant [Legacy]`;
+      if (currentSelection === school) {
+        option.selected = true;
+      }
+      newSelect.appendChild(option);
+    });
+    
+    // If current selection is no longer valid (school removed), reset to none
+    if (currentSelection && !schools.includes(currentSelection)) {
+      book.legacySavant = null;
+    }
+    
+    // Add change listener
+    newSelect.addEventListener("change", () => {
+      book.legacySavant = newSelect.value || null;
+      calculateCosts();
+    });
+    
+    // Replace the old select with the new one
+    const oldSelect = container.querySelector(".savantSelect");
+    if (oldSelect && oldSelect.parentNode) {
+      oldSelect.parentNode.replaceChild(newSelect, oldSelect);
+    }
+  } else {
+    savantLabel.style.display = "none";
+    book.legacySavant = null;
+  }
+  
   // Disable guild checkbox if multiple schools are present
   if (schools.length > 1) {
     guildCheckbox.disabled = true;
@@ -243,30 +323,12 @@ function updateModifierLabelsAndWarnings(book, container) {
     schoolLockCheckbox.disabled = true;
     schoolLockCheckbox.checked = false;
   } else {
-      guildCheckbox.disabled = false;
-      schoolLockCheckbox.disabled = false;
+    guildCheckbox.disabled = false;
+    schoolLockCheckbox.disabled = false;
   }
   
-  // Check for multi-school personal books
-  if (book.type === "personal" && schools.length > 1) {
-    const hasModifiers = badgeCheckbox.checked || savantCheckbox.checked;
-    if (hasModifiers) {
-      warningDiv.textContent = "⚠️ Warning: Badge/Savant modifiers disabled - multiple schools detected in personal spellbook";
-      warningDiv.style.display = "block";
-      badgeCheckbox.disabled = true;
-      savantCheckbox.disabled = true;
-      badgeCheckbox.checked = false;
-      savantCheckbox.checked = false;
-    } else {
-      warningDiv.style.display = "none";
-      badgeCheckbox.disabled = true;
-      savantCheckbox.disabled = true;
-    }
-  } else {
-    warningDiv.style.display = "none";
-    badgeCheckbox.disabled = false;
-    savantCheckbox.disabled = false;
-  }
+  // Warning messages (currently not needed with new system)
+  warningDiv.style.display = "none";
 }
 
 function updateSchoolNumbers() {
@@ -315,7 +377,7 @@ function updateSpellList(book, container) {
       spellInfo.textContent = `${spell.name} (Level ${spell.level}, ${spell.school})`;
       
       const delBtn = document.createElement("button");
-      delBtn.textContent = "X";
+      delBtn.textContent = "❌";
       delBtn.className = "delete-spell";
       delBtn.addEventListener("click", () => removeSpellFromBook(spell.name, book, container));
 
@@ -327,6 +389,10 @@ function updateSpellList(book, container) {
 }
 
 function calculateCosts() {
+  const baseGP = 50;
+  const scribingFee = 20;
+  const baseHours = 2;
+  
   let totalHours = 0;
   let totalGP = 0;
   let totalGuildFee = 0;
@@ -335,41 +401,73 @@ function calculateCosts() {
     const container = document.getElementById(`spellbook${book.id}`);
     if (!container) return;
 
-    // Calculate total spell levels
-    let totalLevels = book.spells.reduce((sum, s) => sum + s.level, 0);
-    if (totalLevels === 0) {
-      totalLevels = parseInt(container.querySelector(".totalLevels").value) || 0;
-    }
+    let gp = 0;
+    let hours = 0;
 
-    let gp = totalLevels * baseGP;
-    let hours = totalLevels * baseHours;
+    // If using manual total levels input
+    const manualLevels = parseInt(container.querySelector(".totalLevels").value) || 0;
+    if (book.spells.length === 0 && manualLevels > 0) {
+      gp = manualLevels * baseGP;
+      hours = manualLevels * baseHours;
+      
+      // Apply wand modifier for manual entry
+      if (container.querySelector(".wand").checked) {
+        gp /= 2;
+      }
+      
+      totalGuildFee += book.type === "personal" ? manualLevels * scribingFee : 0;
+    } else {
+      // Group spells by school for per-school modifier application
+      const spellsBySchool = {};
+      book.spells.forEach(spell => {
+        if (!spellsBySchool[spell.school]) {
+          spellsBySchool[spell.school] = [];
+        }
+        spellsBySchool[spell.school].push(spell);
+      });
 
-    // Apply modifiers
-    //should change these to allow for multiple badges or allowing for legacy savant to be checked, checking each individual spell
-    if (container.querySelector(".wand").checked) {
-      gp /= 2;
-    }
-    if (container.querySelector(".badge").checked) {
-      gp /= 2;
-      hours /= 2;
-    }
-    if (container.querySelector(".savant").checked) {
-      gp /= 2;
-      hours /= 2;
+      // Calculate costs for each school separately
+      Object.keys(spellsBySchool).forEach(school => {
+        const schoolSpells = spellsBySchool[school];
+        const schoolLevels = schoolSpells.reduce((sum, s) => sum + s.level, 0);
+        
+        let schoolGP = schoolLevels * baseGP;
+        let schoolHours = schoolLevels * baseHours;
+
+        // Apply wand modifier (affects all spells)
+        if (container.querySelector(".wand").checked) {
+          schoolGP /= 2;
+        }
+
+        // Apply badge modifier for this specific school
+        if (book.badges && book.badges[school]) {
+          schoolGP /= 2;
+          schoolHours /= 2;
+        }
+
+        // Apply legacy savant modifier for this specific school
+        if (book.legacySavant === school) {
+          schoolGP /= 2;
+          schoolHours /= 2;
+        }
+
+        gp += schoolGP;
+        hours += schoolHours;
+      });
+
+      // Guild fee for personal books
+      const totalLevels = book.spells.reduce((sum, s) => sum + s.level, 0);
+      if (book.type === "personal" && totalLevels > 0) {
+        totalGuildFee += totalLevels * scribingFee;
+      }
     }
 
     gp = Math.ceil(gp);
-    //hours = Math.ceil(hours);
+    hours = Math.ceil(hours);
 
     book._calc = { gp, hours };
     totalGP += gp;
     totalHours += hours;
-
-    // GUILD FEE: Only charge for spells scribed INTO personal books
-    // The fee is 20gp per spell level for any spell being copied
-    if (book.type === "personal" && totalLevels > 0) {
-      totalGuildFee += totalLevels * scribingFee;
-    }
   });
 
   document.getElementById("output").textContent = 
@@ -380,6 +478,7 @@ function calculateCosts() {
 
 function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
   const playerName = document.getElementById("playerName").value.trim() || "Drotar";
+  const combinedModOutput = document.getElementById("combinedModOutput").checked;
 
   let notesMsg = "";
   let tradingMsg = "";
@@ -424,34 +523,47 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
 
     const gpModifiers = [];
     const timeModifiers = [];
-    const schools = [...new Set(book.spells.map(s => s.school))];
-    const primarySchool = book.school || (schools.length === 1 ? schools[0] : null);
     
     const container = document.getElementById(`spellbook${book.id}`);
-    if (container && !simpleModOutput) {
+    if (container) {
+      // Wand only affects GP
       if (container.querySelector(".wand").checked) {
         gpModifiers.push("Arcanist's Scribing Wand");
       }
-      if (container.querySelector(".badge").checked && !container.querySelector(".badge").disabled) {
-        gpModifiers.push(`Badge of the Savant [${primarySchool || "Unknown"}]`);
-        timeModifiers.push(`Badge of the Savant [${primarySchool || "Unknown"}]`);
+      
+      // Badges - combine all schools into one badge entry
+      if (book.badges) {
+        const badgeSchools = Object.keys(book.badges).filter(school => book.badges[school]).sort();
+        if (badgeSchools.length === 1) {
+          const badgeText = `Badge of the Savant [${badgeSchools[0]}]`;
+          gpModifiers.push(badgeText);
+          timeModifiers.push(badgeText);
+        } else if (badgeSchools.length > 1) {
+          const badgeText = `Badge of the Savant [${badgeSchools.join(", ")}]`;
+          gpModifiers.push(badgeText);
+          timeModifiers.push(badgeText);
+        }
       }
-      if (container.querySelector(".savant").checked && !container.querySelector(".savant").disabled) {
-        gpModifiers.push(`${primarySchool || "Unknown"} Savant [Legacy]`);
-        timeModifiers.push(`${primarySchool || "Unknown"} Savant [Legacy]`);
+      
+      // Legacy Savant - only one school
+      if (book.legacySavant) {
+        const savantText = `${book.legacySavant} Savant [Legacy]`;
+        gpModifiers.push(savantText);
+        timeModifiers.push(savantText);
       }
     }
-    const useCombined = combinedModOutput
-    const chosenMods =
-        useCombined && gpModifiers.length >= timeModifiers.length
-        ? gpModifiers
-        : timeModifiers;
-    const combinedModText = useCombined && chosenMods.length ? ` (${chosenMods.join(", ")})` : "";
-    const gpModText = gpModifiers.length ? ` (${gpModifiers.join(", ")})` : "";
-    const timeModText = timeModifiers.length ? ` (${timeModifiers.join(", ")})` : "";
-
-    notesMsg += `${playerName} spends ${gp} gp${useCombined ? "" : gpModText} and ${hours} hours${useCombined ? "" : timeModText}` +
-                `${combinedModText} scribing ${spellList} into ${bookName}\n`;
+    
+    if (combinedModOutput) {
+      // Use the longer list (usually gpModifiers since wand is GP-only)
+      const chosenMods = gpModifiers.length >= timeModifiers.length ? gpModifiers : timeModifiers;
+      const combinedModText = chosenMods.length ? ` (${chosenMods.join(", ")})` : "";
+      notesMsg += `${playerName} spends ${gp} gp and ${hours} hours${combinedModText} scribing ${spellList} into ${bookName}\n`;
+    } else {
+      const gpModText = gpModifiers.length ? ` (${gpModifiers.join(", ")})` : "";
+      const timeModText = timeModifiers.length ? ` (${timeModifiers.join(", ")})` : "";
+      notesMsg += `${playerName} spends ${gp} gp${gpModText} and ${hours} hours${timeModText} scribing ${spellList} into ${bookName}\n`;
+    }
+    
     logMsg += `Scribed ${spellList} into ${bookName}, `;
   });
 
@@ -462,7 +574,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
   logMsg = logMsg.replace(/, $/, '');
   logMsg += `\nNotes-and-pings link: [x]\n${totalGuildFee > 0 ? "Trading link: [x]\n" : ""}<@&1454706630934401169>`;
 
-  document.getElementById("discordMessages").innerHTML = //change these to links
+  document.getElementById("discordMessages").innerHTML = 
     `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a><br/>${notesMsg}\n\n${totalGuildFee > 0 ? `#trading:\n${tradingMsg}\n\n` : ''}#scribing-log:\n${logMsg}`;
 }
 
@@ -578,6 +690,7 @@ function setupSpellAutocomplete(input, book, container) {
 createSpellbook();
 document.getElementById("addBook").addEventListener("click", createSpellbook);
 document.getElementById("playerName").addEventListener("input", calculateCosts);
+document.getElementById("combinedModOutput").addEventListener("change", calculateCosts);
 
 // Spell data
 var ALL_SPELLS = [

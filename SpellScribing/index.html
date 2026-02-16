@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spell Scribing Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .player-info {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .player-info label {
+      display: inline-block;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .player-info input {
+      padding: 6px;
+      width: 200px;
+    }
+    #spellbooksContainer {
+      margin-bottom: 20px;
+    }
+    .spellbook {
+      background: white;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .spellbook h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    label {
+      display: block;
+      margin: 8px 0;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 4px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 6px;
+      margin: 10px 0;
+    }
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .delete-spell {
+      background-color: #e74c3c;
+      padding: 2px 8px;
+      font-size: 12px;
+    }
+    .delete-spell:hover {
+      background-color: #c0392b;
+    }
+    .spellList {
+      padding-left: 0;
+    }
+    .spellList li {
+      padding: 5px;
+      margin: 3px 0;
+      background-color: #ecf0f1;
+      border-radius: 4px;
+    }
+    #output, #discordMessages {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+    .autocomplete-items div {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #ddd;
+    }
+    .autocomplete-items div:hover {
+      background-color: #e3f2fd;
+    }
+  </style>
+</head>
+<body>
+  <h1>D&D Spell Scribing Calculator</h1>
+  
+  <div class="player-info">
+    <label for="playerName">Player Name:</label>
+    <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
+  </div>
+  
+  <button id="addBook">+ Add Spellbook</button>
+  <div id="spellbooksContainer"></div>
+  <div id="output"></div>
+  <div id="discordMessages"></div>
+
+</body>
+</html>

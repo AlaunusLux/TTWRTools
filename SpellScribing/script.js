@@ -25,6 +25,10 @@ function createSpellbook() {
     
     <div class="badgeContainer"></div>
     
+    <div class="badgeStateContainer" style="margin-left: 20px; font-size: 0.9em; color: #555;">
+      <!-- Badge state checkboxes will be added here dynamically -->
+    </div>
+    
     <div class="savantContainer">
       <label style="display: none;" class="savantLabel">
         <span class="savantText">Legacy Savant:</span>
@@ -55,7 +59,9 @@ function createSpellbook() {
     schoolLock: false,
     savedSchoolLock: false,
     badges: {},  // Track which schools have badges: { "Evocation": true, "Abjuration": false }
-    legacySavant: null  // Track which school has legacy savant
+    legacySavant: null,  // Track which school has legacy savant
+    badgeStartedAttached: {},  // Track if badge started attached for each school
+    badgeStaysAttached: {}  // Track if badge stays attached for each school
   };
   spellbooks.push(book);
 
@@ -241,17 +247,24 @@ function updateModifierControls(book, container) {
   // Show badges and savant for both personal and guild books
   // Create badge checkboxes for each school
   badgeContainer.innerHTML = "";
+  const badgeStateContainer = container.querySelector(".badgeStateContainer");
+  badgeStateContainer.innerHTML = ""; // Clear this, we'll add states inline now
   
   // Clean up badges for schools that are no longer in the book
   if (book.badges) {
     Object.keys(book.badges).forEach(school => {
       if (!schools.includes(school)) {
         delete book.badges[school];
+        delete book.badgeStartedAttached[school];
+        delete book.badgeStaysAttached[school];
       }
     });
   }
   
   schools.forEach(school => {
+    const badgeDiv = document.createElement("div");
+    badgeDiv.style.marginBottom = "10px";
+    
     const label = document.createElement("label");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -259,13 +272,53 @@ function updateModifierControls(book, container) {
     checkbox.checked = book.badges[school] || false;
     checkbox.addEventListener("change", () => {
       book.badges[school] = checkbox.checked;
+      updateModifierControls(book, container);
       calculateCosts();
     });
     
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(` Badge of the Savant [${school}] (halve gp & time)`));
-    label.appendChild(document.createElement("br"));
-    badgeContainer.appendChild(label);
+    badgeDiv.appendChild(label);
+    
+    // Add badge state checkboxes directly under this badge if it's being used
+    if (book.badges[school]) {
+      const stateDiv = document.createElement("div");
+      stateDiv.style.marginLeft = "30px";
+      stateDiv.style.marginTop = "5px";
+      stateDiv.style.fontSize = "0.9em";
+      stateDiv.style.color = "#555";
+      
+      const startedLabel = document.createElement("label");
+      startedLabel.style.marginRight = "15px";
+      startedLabel.style.display = "inline-block";
+      const startedCheckbox = document.createElement("input");
+      startedCheckbox.type = "checkbox";
+      startedCheckbox.checked = book.badgeStartedAttached[school] || false;
+      startedCheckbox.addEventListener("change", () => {
+        book.badgeStartedAttached[school] = startedCheckbox.checked;
+        calculateCosts();
+      });
+      startedLabel.appendChild(startedCheckbox);
+      startedLabel.appendChild(document.createTextNode(` Started attached`));
+      
+      const staysLabel = document.createElement("label");
+      staysLabel.style.display = "inline-block";
+      const staysCheckbox = document.createElement("input");
+      staysCheckbox.type = "checkbox";
+      staysCheckbox.checked = book.badgeStaysAttached[school] || false;
+      staysCheckbox.addEventListener("change", () => {
+        book.badgeStaysAttached[school] = staysCheckbox.checked;
+        calculateCosts();
+      });
+      staysLabel.appendChild(staysCheckbox);
+      staysLabel.appendChild(document.createTextNode(` Stays attached`));
+      
+      stateDiv.appendChild(startedLabel);
+      stateDiv.appendChild(staysLabel);
+      badgeDiv.appendChild(stateDiv);
+    }
+    
+    badgeContainer.appendChild(badgeDiv);
   });
   
   // Update legacy savant dropdown
@@ -390,8 +443,10 @@ function updateSpellList(book, container) {
 
 function calculateCosts() {
   const baseGP = 50;
-  const scribingFee = 20;
   const baseHours = 2;
+  const guildBaseGP = 10;  // Already know the spell
+  const guildBaseHours = 1;  // Already know the spell
+  const scribingFee = 20;
   
   let totalHours = 0;
   let totalGP = 0;
@@ -401,14 +456,18 @@ function calculateCosts() {
     const container = document.getElementById(`spellbook${book.id}`);
     if (!container) return;
 
+    // Determine base costs based on book type
+    const bookBaseGP = book.type === "guild" ? guildBaseGP : baseGP;
+    const bookBaseHours = book.type === "guild" ? guildBaseHours : baseHours;
+
     let gp = 0;
     let hours = 0;
 
     // If using manual total levels input
     const manualLevels = parseInt(container.querySelector(".totalLevels").value) || 0;
     if (book.spells.length === 0 && manualLevels > 0) {
-      gp = manualLevels * baseGP;
-      hours = manualLevels * baseHours;
+      gp = manualLevels * bookBaseGP;
+      hours = manualLevels * bookBaseHours;
       
       // Apply wand modifier for manual entry
       if (container.querySelector(".wand").checked) {
@@ -431,8 +490,8 @@ function calculateCosts() {
         const schoolSpells = spellsBySchool[school];
         const schoolLevels = schoolSpells.reduce((sum, s) => sum + s.level, 0);
         
-        let schoolGP = schoolLevels * baseGP;
-        let schoolHours = schoolLevels * baseHours;
+        let schoolGP = schoolLevels * bookBaseGP;
+        let schoolHours = schoolLevels * bookBaseHours;
 
         // Apply wand modifier (affects all spells)
         if (container.querySelector(".wand").checked) {
@@ -455,7 +514,7 @@ function calculateCosts() {
         hours += schoolHours;
       });
 
-      // Guild fee for personal books
+      // Guild fee for personal books only
       const totalLevels = book.spells.reduce((sum, s) => sum + s.level, 0);
       if (book.type === "personal" && totalLevels > 0) {
         totalGuildFee += totalLevels * scribingFee;
@@ -473,7 +532,163 @@ function calculateCosts() {
   document.getElementById("output").textContent = 
     `Total GP: ${totalGP}\nTotal Hours: ${totalHours}${totalHours > 18 ? " ⚠️ Warning: Only 18h of scribing allowed in a day." : ""}\nGuild Fee: ${totalGuildFee} gp`;
 
+  // Generate badge movement plan
+  const badgePlan = optimizeBadgeMovements();
+  let badgePlanHTML = "";
+  
+  if (badgePlan.movements.length > 0) {
+    const toggleId = 'badgePlanToggle_' + Date.now();
+    badgePlanHTML = `<div style="background: #fff3cd; padding: 15px; margin-top: 15px; border-radius: 8px; border: 1px solid #ffc107;"><h3 style="margin-top: 0; color: #856404; cursor: pointer; user-select: none;" onclick="
+        const content = document.getElementById('badgePlanContent');
+        const toggle = document.getElementById('${toggleId}');
+        if (content.style.display === 'none') {
+          content.style.display = 'block';
+          toggle.textContent = '▼';
+        } else {
+          content.style.display = 'none';
+          toggle.textContent = '▶';
+        }
+      "><span id="${toggleId}">▶</span> 📋 Badge Movement Plan (click to expand)</h3><div id="badgePlanContent" style="display: none;"><ol style="padding-left: 20px;">`;
+    
+    badgePlan.movements.forEach(move => {
+      if (move.isScribing) {
+        badgePlanHTML += `<li style="color: #0066cc; font-weight: bold; margin: 8px 0;">${move.action}</li>`;
+      } else if (move.slotLevel === 0) {
+        badgePlanHTML += `<li style="color: #666; font-style: italic; margin: 8px 0;">${move.action} ${move.description || ''}</li>`;
+      } else {
+        badgePlanHTML += `<li style="margin: 8px 0;">${move.action} <span style="color: #d9534f; font-weight: bold;">${move.description}</span></li>`;
+      }
+    });
+    
+    badgePlanHTML += `</ol><div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;"><strong>Spell Slot Costs:</strong><br/>`;
+    
+    const sortedLevels = Object.keys(badgePlan.slotCosts).sort((a, b) => a - b);
+    sortedLevels.forEach(level => {
+      badgePlanHTML += `<span style="display: inline-block; margin-right: 15px;">${level}${getOrdinal(level)} level: ${badgePlan.slotCosts[level]} slot${badgePlan.slotCosts[level] !== 1 ? 's' : ''}</span>`;
+    });
+    
+    badgePlanHTML += `</div></div></div>`;
+    document.getElementById("output").innerHTML += badgePlanHTML;
+  }
+
   generateDiscordMessages(totalGP, totalHours, totalGuildFee);
+}
+
+function optimizeBadgeMovements() {
+  // Collect all books that need badges
+  const badgeNeeds = []; // { book, school, startedAttached, staysAttached }
+  
+  spellbooks.forEach(book => {
+    if (book.badges) {
+      Object.keys(book.badges).forEach(school => {
+        if (book.badges[school]) {
+          badgeNeeds.push({
+            book: book,
+            bookId: book.id,
+            bookName: getBookDisplayName(book),
+            school: school,
+            startedAttached: book.badgeStartedAttached[school] || false,
+            staysAttached: book.badgeStaysAttached[school] || false
+          });
+        }
+      });
+    }
+  });
+  
+  if (badgeNeeds.length === 0) {
+    return { movements: [], slotCosts: {} };
+  }
+  
+  // Group by school
+  const bySchool = {};
+  badgeNeeds.forEach(need => {
+    if (!bySchool[need.school]) bySchool[need.school] = [];
+    bySchool[need.school].push(need);
+  });
+  
+  const allMovements = [];
+  const slotCosts = {};
+  
+  // Process each school's badge separately
+  Object.keys(bySchool).forEach(school => {
+    const needs = bySchool[school];
+    
+    // Sort: startedAttached first, then staysAttached last
+    needs.sort((a, b) => {
+      if (a.startedAttached && !b.startedAttached) return -1;
+      if (!a.startedAttached && b.startedAttached) return 1;
+      if (a.staysAttached && !b.staysAttached) return 1;
+      if (!a.staysAttached && b.staysAttached) return -1;
+      return 0;
+    });
+    
+    let currentBadgeCount = 0;
+    
+    needs.forEach((need, index) => {
+      const isFirst = index === 0;
+      const isLast = index === needs.length - 1;
+      
+      // Attach badge
+      if (!isFirst || !need.startedAttached) {
+        const attachCost = 1 + currentBadgeCount;
+        allMovements.push({
+          action: `Attach ${school} Badge to ${need.bookName}`,
+          slotLevel: attachCost,
+          description: `(${currentBadgeCount} badge${currentBadgeCount !== 1 ? 's' : ''} on book → ${attachCost}${getOrdinal(attachCost)} level slot)`
+        });
+        slotCosts[attachCost] = (slotCosts[attachCost] || 0) + 1;
+      } else {
+        allMovements.push({
+          action: `${school} Badge already on ${need.bookName}`,
+          slotLevel: 0,
+          description: `(started attached, no cost)`
+        });
+      }
+      
+      currentBadgeCount++;
+      
+      // Scribing happens here
+      allMovements.push({
+        action: `→ Scribe ${school} spells with ${need.bookName}`,
+        slotLevel: 0,
+        isScribing: true
+      });
+      
+      // Detach badge
+      if (!isLast || !need.staysAttached) {
+        const detachCost = 1 + currentBadgeCount; // Cost is 1 + current badges on book
+        allMovements.push({
+          action: `Detach ${school} Badge from ${need.bookName}`,
+          slotLevel: detachCost,
+          description: `(${currentBadgeCount} badge${currentBadgeCount !== 1 ? 's' : ''} on book → ${detachCost}${getOrdinal(detachCost)} level slot)`
+        });
+        slotCosts[detachCost] = (slotCosts[detachCost] || 0) + 1;
+        currentBadgeCount--;
+      } else {
+        allMovements.push({
+          action: `${school} Badge stays on ${need.bookName}`,
+          slotLevel: 0,
+          description: `(stays attached, no cost)`
+        });
+      }
+    });
+  });
+  
+  return { movements: allMovements, slotCosts };
+}
+
+function getBookDisplayName(book) {
+  if (book.customName) return book.customName;
+  if (book.type === "guild" && book.school) return `${book.school} Spellbook ${book.schoolNumber}`;
+  if (book.type === "guild") return `Guild Spellbook ${book.id}`;
+  if (book.id === 1) return "Personal Spellbook";
+  return `Personal Spellbook ${book.id}`;
+}
+
+function getOrdinal(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {

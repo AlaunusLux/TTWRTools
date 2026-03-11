@@ -5,6 +5,18 @@ const baseHours = 2;
 let bookCount = 0;
 const spellbooks = [];
 
+function getNextPersonalBookNumber() {
+  const personalBooks = spellbooks.filter(b => b.type === "personal");
+  if (personalBooks.length === 0) return 1;
+  
+  // Find the lowest unused number
+  const usedNumbers = personalBooks.map(b => b.personalNumber).sort((a, b) => a - b);
+  for (let i = 1; i <= usedNumbers.length + 1; i++) {
+    if (!usedNumbers.includes(i)) return i;
+  }
+  return 1;
+}
+
 function createSpellbook() {
   bookCount++;
   const bookId = bookCount;
@@ -16,12 +28,18 @@ function createSpellbook() {
     <div style="display: flex; align-items: center; gap: 10px;">
       <h3 class="bookHeading">Personal Spellbook ${bookId}</h3>
       <button class="renameBtn" style="font-size: 12px; padding: 4px 8px;">Rename</button>
+      <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
     </div>
     <input type="text" class="customName" placeholder="Custom name (optional)" style="width: 300px; margin-bottom: 10px; display: none;">
     
     <label>Total Spell Levels (if not adding individually): <input type="number" class="totalLevels" min="0" value="0"></label><br>
 
-    <label><input type="checkbox" class="wand"> Arcanist's Scribing Wand (halve gp)</label><br>
+    <div style="margin: 10px 0;">
+      <strong>Scribing Tool:</strong>
+      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
+      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand"> Arcanist's Scribing Wand (halve gp)</label>
+      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill"> Pegasus Quill (halve time)</label>
+    </div>
     
     <div class="badgeContainer"></div>
     
@@ -49,10 +67,15 @@ function createSpellbook() {
 
   document.getElementById("spellbooksContainer").appendChild(container);
 
+  document.getElementById("spellbooksContainer").appendChild(container);
+
+  const personalNumber = getNextPersonalBookNumber();
+  
   const book = {
     id: bookId,
     spells: [],
     type: "personal",
+    personalNumber: personalNumber,  // Track personal book number separately
     school: null,
     schoolNumber: null,
     customName: null,
@@ -64,13 +87,19 @@ function createSpellbook() {
     badgeStaysAttached: {}  // Track if badge stays attached for each school
   };
   spellbooks.push(book);
+  
+  // Update the initial heading with correct number
+  updateBookHeading(book, container);
 
   // Event listeners for modifiers
-  [".wand", ".totalLevels"].forEach(sel => {
-    container.querySelector(sel).addEventListener("input", () => {
-      updateModifierControls(book, container);
-      calculateCosts();
-    });
+  [".toolNone", ".toolWand", ".toolQuill", ".totalLevels"].forEach(sel => {
+    const element = container.querySelector(sel);
+    if (element) {
+      element.addEventListener("input", () => {
+        updateModifierControls(book, container);
+        calculateCosts();
+      });
+    }
   });
 
   container.querySelector(".guild").addEventListener("change", function() {
@@ -143,6 +172,35 @@ function createSpellbook() {
     }
   });
 
+  // Delete button functionality
+  const deleteBtn = container.querySelector(".deleteBtn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", () => {
+      const bookName = book.customName || 
+                       (book.type === "guild" && book.school ? `${book.school} Spellbook ${book.schoolNumber}` : 
+                        book.type === "guild" ? "Guild Spellbook" :
+                        `Personal Spellbook ${book.personalNumber}`);
+      if (confirm(`Are you sure you want to delete ${bookName}?`)) {
+        // Remove from spellbooks array
+        const index = spellbooks.findIndex(b => b.id === book.id);
+        if (index > -1) {
+          spellbooks.splice(index, 1);
+        }
+        
+        // Remove the DOM element
+        container.remove();
+        
+        // Recalculate school numbers for remaining guild books
+        updateSchoolNumbers();
+        
+        // Recalculate costs
+        calculateCosts();
+      }
+    });
+  } else {
+    console.error("Delete button not found for book", book.id);
+  }
+
   const input = container.querySelector(".spellInput");
   setupSpellAutocomplete(input, book, container);
 }
@@ -165,6 +223,7 @@ function addSpellToBook(spell, book, container) {
   const totalLevelsInput = container.querySelector(".totalLevels");
   totalLevelsInput.disabled = true;
   totalLevelsInput.style.opacity = "0.5";
+  totalLevelsInput.parentElement.style.display = "none";
   
   updateBookHeading(book, container);
   updateSpellList(book, container);
@@ -189,6 +248,8 @@ function removeSpellFromBook(spellName, book, container) {
     const totalLevelsInput = container.querySelector(".totalLevels");
     totalLevelsInput.disabled = false;
     totalLevelsInput.style.opacity = "1";
+    totalLevelsInput.parentElement.style.display = "block";
+
   }
   
   updateBookHeading(book, container);
@@ -209,10 +270,10 @@ function updateBookHeading(book, container) {
     if (book.school && book.schoolNumber) {
       h3.textContent = `${book.school} Spellbook ${book.schoolNumber}`;
     } else {
-      h3.textContent = `Guild Spellbook ${book.id}`;
+      h3.textContent = `Guild Spellbook`;
     }
   } else {
-    h3.textContent = `Personal Spellbook ${book.id}`;
+    h3.textContent = `Personal Spellbook ${book.personalNumber}`;
   }
 }
 
@@ -460,6 +521,10 @@ function calculateCosts() {
     const bookBaseGP = book.type === "guild" ? guildBaseGP : baseGP;
     const bookBaseHours = book.type === "guild" ? guildBaseHours : baseHours;
 
+    // Get scribing tool selection
+    const toolWand = container.querySelector(".toolWand").checked;
+    const toolQuill = container.querySelector(".toolQuill").checked;
+
     let gp = 0;
     let hours = 0;
 
@@ -469,10 +534,9 @@ function calculateCosts() {
       gp = manualLevels * bookBaseGP;
       hours = manualLevels * bookBaseHours;
       
-      // Apply wand modifier for manual entry
-      if (container.querySelector(".wand").checked) {
-        gp /= 2;
-      }
+      // Apply tool modifiers for manual entry
+      if (toolWand) gp /= 2;
+      if (toolQuill) hours /= 2;
       
       totalGuildFee += book.type === "personal" ? manualLevels * scribingFee : 0;
     } else {
@@ -493,18 +557,17 @@ function calculateCosts() {
         let schoolGP = schoolLevels * bookBaseGP;
         let schoolHours = schoolLevels * bookBaseHours;
 
-        // Apply wand modifier (affects all spells)
-        if (container.querySelector(".wand").checked) {
-          schoolGP /= 2;
-        }
+        // Apply tool modifiers (affects all spells)
+        if (toolWand) schoolGP /= 2;
+        if (toolQuill) schoolHours /= 2;
 
-        // Apply badge modifier for this specific school
+        // Apply badge modifier for this specific school (halves both GP and time)
         if (book.badges && book.badges[school]) {
           schoolGP /= 2;
           schoolHours /= 2;
         }
 
-        // Apply legacy savant modifier for this specific school
+        // Apply legacy savant modifier for this specific school (halves both GP and time)
         if (book.legacySavant === school) {
           schoolGP /= 2;
           schoolHours /= 2;
@@ -536,7 +599,10 @@ function calculateCosts() {
   const badgePlan = optimizeBadgeMovements();
   let badgePlanHTML = "";
   
-  if (badgePlan.movements.length > 0) {
+  // Only show the plan if spell slots will be used
+  const hasSlotCosts = Object.keys(badgePlan.slotCosts).length > 0;
+  
+  if (badgePlan.movements.length > 0 && hasSlotCosts) {
     const toggleId = 'badgePlanToggle_' + Date.now();
     badgePlanHTML = `<div style="background: #fff3cd; padding: 15px; margin-top: 15px; border-radius: 8px; border: 1px solid #ffc107;"><h3 style="margin-top: 0; color: #856404; cursor: pointer; user-select: none;" onclick="
         const content = document.getElementById('badgePlanContent');
@@ -599,78 +665,69 @@ function optimizeBadgeMovements() {
     return { movements: [], slotCosts: {} };
   }
   
-  // Group by school
-  const bySchool = {};
+  // Group by book first, then by school
+  const byBook = {};
   badgeNeeds.forEach(need => {
-    if (!bySchool[need.school]) bySchool[need.school] = [];
-    bySchool[need.school].push(need);
+    if (!byBook[need.bookId]) byBook[need.bookId] = [];
+    byBook[need.bookId].push(need);
   });
   
   const allMovements = [];
   const slotCosts = {};
   
-  // Process each school's badge separately
-  Object.keys(bySchool).forEach(school => {
-    const needs = bySchool[school];
+  // Process each book's badges
+  Object.keys(byBook).forEach(bookId => {
+    const bookNeeds = byBook[bookId];
     
-    // Sort: startedAttached first, then staysAttached last
-    needs.sort((a, b) => {
+    // Count how many badges start attached on this book
+    const startedAttachedCount = bookNeeds.filter(n => n.startedAttached).length;
+    let currentBadgeCount = startedAttachedCount;
+    
+    // Sort: startedAttached first, then by school name for consistency
+    bookNeeds.sort((a, b) => {
       if (a.startedAttached && !b.startedAttached) return -1;
       if (!a.startedAttached && b.startedAttached) return 1;
-      if (a.staysAttached && !b.staysAttached) return 1;
-      if (!a.staysAttached && b.staysAttached) return -1;
-      return 0;
+      return a.school.localeCompare(b.school);
     });
     
-    let currentBadgeCount = 0;
-    
-    needs.forEach((need, index) => {
-      const isFirst = index === 0;
-      const isLast = index === needs.length - 1;
-      
+    bookNeeds.forEach((need, index) => {
       // Attach badge
-      if (!isFirst || !need.startedAttached) {
+      if (need.startedAttached) {
+        allMovements.push({
+          action: `${need.school} Badge already on ${need.bookName}`,
+          slotLevel: 0,
+          description: `(started attached, no cost)`
+        });
+      } else {
         const attachCost = 1 + currentBadgeCount;
         allMovements.push({
-          action: `Attach ${school} Badge to ${need.bookName}`,
+          action: `Attach ${need.school} Badge to ${need.bookName}`,
           slotLevel: attachCost,
           description: `(${currentBadgeCount} badge${currentBadgeCount !== 1 ? 's' : ''} on book → ${attachCost}${getOrdinal(attachCost)} level slot)`
         });
         slotCosts[attachCost] = (slotCosts[attachCost] || 0) + 1;
-      } else {
-        allMovements.push({
-          action: `${school} Badge already on ${need.bookName}`,
-          slotLevel: 0,
-          description: `(started attached, no cost)`
-        });
+        currentBadgeCount++;
       }
-      
-      currentBadgeCount++;
       
       // Scribing happens here
       allMovements.push({
-        action: `→ Scribe ${school} spells with ${need.bookName}`,
+        action: `→ Scribe ${need.school} spells with ${need.bookName}`,
         slotLevel: 0,
         isScribing: true
       });
       
       // Detach badge
-      if (!isLast || !need.staysAttached) {
-        const detachCost = 1 + currentBadgeCount; // Cost is 1 + current badges on book
+      if (!need.staysAttached) {
+        const detachCost = 1 + currentBadgeCount;
         allMovements.push({
-          action: `Detach ${school} Badge from ${need.bookName}`,
+          action: `Detach ${need.school} Badge from ${need.bookName}`,
           slotLevel: detachCost,
           description: `(${currentBadgeCount} badge${currentBadgeCount !== 1 ? 's' : ''} on book → ${detachCost}${getOrdinal(detachCost)} level slot)`
         });
         slotCosts[detachCost] = (slotCosts[detachCost] || 0) + 1;
         currentBadgeCount--;
-      } else {
-        allMovements.push({
-          action: `${school} Badge stays on ${need.bookName}`,
-          slotLevel: 0,
-          description: `(stays attached, no cost)`
-        });
       }
+      // If stays attached, just leave it (implied, no action needed)
     });
   });
   
@@ -680,9 +737,9 @@ function optimizeBadgeMovements() {
 function getBookDisplayName(book) {
   if (book.customName) return book.customName;
   if (book.type === "guild" && book.school) return `${book.school} Spellbook ${book.schoolNumber}`;
-  if (book.type === "guild") return `Guild Spellbook ${book.id}`;
-  if (book.id === 1) return "Personal Spellbook";
-  return `Personal Spellbook ${book.id}`;
+  if (book.type === "guild") return `Guild Spellbook`;
+  if (book.personalNumber === 1) return "Personal Spellbook";
+  return `Personal Spellbook ${book.personalNumber}`;
 }
 
 function getOrdinal(n) {
@@ -714,14 +771,14 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
     } else if (book.type === "guild" && book.school) {
       bookName = `${book.school} Spellbook ${book.schoolNumber}`;
     } else if (book.type === "guild") {
-      bookName = `Guild Spellbook ${book.id}`;
+      bookName = `Guild Spellbook`;
     } else {
       // For personal spellbooks
-      if (!firstPersonalBookSeen && book.id === 1) {
+      if (!firstPersonalBookSeen && book.personalNumber === 1) {
         bookName = "their personal spellbook from a guild spellbook.";
         firstPersonalBookSeen = true;
       } else {
-        bookName = `Personal Spellbook ${book.id} from a guild spellbook.`;
+        bookName = `Personal Spellbook ${book.personalNumber} from a guild spellbook.`;
       }
     }
 
@@ -741,9 +798,15 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
     
     const container = document.getElementById(`spellbook${book.id}`);
     if (container) {
-      // Wand only affects GP
-      if (container.querySelector(".wand").checked) {
+      // Tool modifiers
+      const toolWand = container.querySelector(".toolWand").checked;
+      const toolQuill = container.querySelector(".toolQuill").checked;
+      
+      if (toolWand) {
         gpModifiers.push("Arcanist's Scribing Wand");
+      }
+      if (toolQuill) {
+        timeModifiers.push("Pegasus Quill");
       }
       
       // Badges - combine all schools into one badge entry

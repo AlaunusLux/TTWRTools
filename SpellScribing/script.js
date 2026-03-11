@@ -84,7 +84,8 @@ function createSpellbook() {
     badges: {},  // Track which schools have badges: { "Evocation": true, "Abjuration": false }
     legacySavant: null,  // Track which school has legacy savant
     badgeStartedAttached: {},  // Track if badge started attached for each school
-    badgeStaysAttached: {}  // Track if badge stays attached for each school
+    badgeStaysAttached: {},  // Track if badge stays attached for each school
+     badgeBorrowed: {}  // NEW: Track if each school's badge is borrowed
   };
   spellbooks.push(book);
   
@@ -318,6 +319,7 @@ function updateModifierControls(book, container) {
         delete book.badges[school];
         delete book.badgeStartedAttached[school];
         delete book.badgeStaysAttached[school];
+        delete book.badgeBorrowed[school];
       }
     });
   }
@@ -333,6 +335,10 @@ function updateModifierControls(book, container) {
     checkbox.checked = book.badges[school] || false;
     checkbox.addEventListener("change", () => {
       book.badges[school] = checkbox.checked;
+      if (!checkbox.checked) {
+        // Clear borrowed state when badge is unchecked
+        book.badgeBorrowed[school] = false;
+      }
       updateModifierControls(book, container);
       calculateCosts();
     });
@@ -363,6 +369,7 @@ function updateModifierControls(book, container) {
       startedLabel.appendChild(document.createTextNode(` Started attached`));
       
       const staysLabel = document.createElement("label");
+      staysLabel.style.marginRight = "15px";
       staysLabel.style.display = "inline-block";
       const staysCheckbox = document.createElement("input");
       staysCheckbox.type = "checkbox";
@@ -373,9 +380,23 @@ function updateModifierControls(book, container) {
       });
       staysLabel.appendChild(staysCheckbox);
       staysLabel.appendChild(document.createTextNode(` Stays attached`));
+
+      // NEW: Borrowed checkbox
+      const borrowedLabel = document.createElement("label");
+      borrowedLabel.style.display = "inline-block";
+      const borrowedCheckbox = document.createElement("input");
+      borrowedCheckbox.type = "checkbox";
+      borrowedCheckbox.checked = book.badgeBorrowed[school] || false;
+      borrowedCheckbox.addEventListener("change", () => {
+        book.badgeBorrowed[school] = borrowedCheckbox.checked;
+        calculateCosts();
+      });
+      borrowedLabel.appendChild(borrowedCheckbox);
+      borrowedLabel.appendChild(document.createTextNode(` Borrowed`));
       
       stateDiv.appendChild(startedLabel);
       stateDiv.appendChild(staysLabel);
+      stateDiv.appendChild(borrowedLabel);
       badgeDiv.appendChild(stateDiv);
     }
     
@@ -586,7 +607,6 @@ function calculateCosts() {
     }
 
     gp = Math.ceil(gp);
-    //hours = Math.ceil(hours);
 
     book._calc = { gp, hours };
     totalGP += gp;
@@ -852,10 +872,49 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
   }
 
   if (totalGuildFee > 0) {
-    tradingMsg = `Name: ${playerName}\nPaying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;
-    //books borrowed from guild message
-    //Borrowing: "Guild spellbook x" for each school of magic scribed into personal spellbook.
-    //Also needs to list badges borrowed here?
+    // Collect schools scribed into personal books (for borrowing line)
+    const borrowedBookSchools = new Set();
+    const borrowedBadgeSchools = new Set();
+
+    spellbooks.forEach(book => {
+      if (book.type === "personal" && book.spells.length > 0) {
+        const schools = [...new Set(book.spells.map(s => s.school))];
+        schools.forEach(s => borrowedBookSchools.add(s));
+      }
+      // Collect badge schools marked as borrowed
+      if (book.badges) {
+        Object.keys(book.badges).forEach(school => {
+          if (book.badges[school] && book.badgeBorrowed && book.badgeBorrowed[school]) {
+            borrowedBadgeSchools.add(school);
+          }
+        });
+      }
+    });
+
+    const sortedBookSchools = [...borrowedBookSchools].sort();
+    const sortedBadgeSchools = [...borrowedBadgeSchools].sort();
+
+    let borrowingParts = [];
+
+    if (sortedBookSchools.length > 0) {
+      const bookLabel = sortedBookSchools.length === 1
+        ? `${sortedBookSchools[0]} spellbook`
+        : formatList(sortedBookSchools) + " spellbooks";
+      borrowingParts.push(bookLabel);
+    }
+
+    if (sortedBadgeSchools.length > 0) {
+      const badgeLabel = sortedBadgeSchools.length === 1
+        ? `Badge of the Savant (${sortedBadgeSchools[0]})`
+        : `Badges of the Savant (${formatList(sortedBadgeSchools)})`;
+      borrowingParts.push(badgeLabel);
+    }
+
+    const borrowingLine = borrowingParts.length > 0
+      ? `Borrowing and returning: ${borrowingParts.join(", ")}\n`
+      : "";
+
+    tradingMsg = `Name: ${playerName}\n${borrowingLine}Paying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;
   }
 
   logMsg = logMsg.replace(/, $/, '');
@@ -863,6 +922,13 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
 
   document.getElementById("discordMessages").innerHTML = 
     `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a><br/>${notesMsg}\n\n${totalGuildFee > 0 ? `#trading:\n${tradingMsg}\n\n` : ''}#scribing-log:\n${logMsg}`;
+}
+
+// Helper: format a list with "and" before the last item
+function formatList(items) {
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return items[0] + " and " + items[1];
+  return items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
 }
 
 function setupSpellAutocomplete(input, book, container) {

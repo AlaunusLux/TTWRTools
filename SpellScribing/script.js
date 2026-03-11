@@ -512,6 +512,7 @@ function calculateCosts() {
   let totalHours = 0;
   let totalGP = 0;
   let totalGuildFee = 0;
+  let spellSlotCosts = "Spell Slot Costs:\n";
 
   spellbooks.forEach(book => {
     const container = document.getElementById(`spellbook${book.id}`);
@@ -585,7 +586,7 @@ function calculateCosts() {
     }
 
     gp = Math.ceil(gp);
-    hours = Math.ceil(hours);
+    //hours = Math.ceil(hours);
 
     book._calc = { gp, hours };
     totalGP += gp;
@@ -631,13 +632,14 @@ function calculateCosts() {
     const sortedLevels = Object.keys(badgePlan.slotCosts).sort((a, b) => a - b);
     sortedLevels.forEach(level => {
       badgePlanHTML += `<span style="display: inline-block; margin-right: 15px;">${level}${getOrdinal(level)} level: ${badgePlan.slotCosts[level]} slot${badgePlan.slotCosts[level] !== 1 ? 's' : ''}</span>`;
+      spellSlotCosts += `${level}${getOrdinal(level)} level: ${badgePlan.slotCosts[level]} slot${badgePlan.slotCosts[level] !== 1 ? 's' : ''}\n`;
     });
     
     badgePlanHTML += `</div></div></div>`;
     document.getElementById("output").innerHTML += badgePlanHTML;
   }
 
-  generateDiscordMessages(totalGP, totalHours, totalGuildFee);
+  generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCosts);
 }
 
 function optimizeBadgeMovements() {
@@ -748,7 +750,7 @@ function getOrdinal(n) {
   return (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
+function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCosts) {
   const playerName = document.getElementById("playerName").value.trim() || "Drotar";
   const combinedModOutput = document.getElementById("combinedModOutput").checked;
 
@@ -775,7 +777,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
     } else {
       // For personal spellbooks
       if (!firstPersonalBookSeen && book.personalNumber === 1) {
-        bookName = "their personal spellbook from a guild spellbook.";
+        bookName = "their personal spellbook from a guild spellbook."; //need to possibly pluralize this if it's multiple spell schools
         firstPersonalBookSeen = true;
       } else {
         bookName = `Personal Spellbook ${book.personalNumber} from a guild spellbook.`;
@@ -841,12 +843,19 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee) {
       const timeModText = timeModifiers.length ? ` (${timeModifiers.join(", ")})` : "";
       notesMsg += `${playerName} spends ${gp} gp${gpModText} and ${hours} hours${timeModText} scribing ${spellList} into ${bookName}\n`;
     }
-    
+
     logMsg += `Scribed ${spellList} into ${bookName}, `;
   });
 
+  if(spellSlotCosts != "Spell Slot Costs:\n") {
+      notesMsg += spellSlotCosts;
+  }
+
   if (totalGuildFee > 0) {
     tradingMsg = `Name: ${playerName}\nPaying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;
+    //books borrowed from guild message
+    //Borrowing: "Guild spellbook x" for each school of magic scribed into personal spellbook.
+    //Also needs to list badges borrowed here?
   }
 
   logMsg = logMsg.replace(/, $/, '');

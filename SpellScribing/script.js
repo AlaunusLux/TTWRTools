@@ -13,7 +13,7 @@ function getNextPersonalBookNumber() {
   return 1;
 }
 
-function createSpellbook() {
+function createSpellbook(savedState = null) {
   bookCount++;
   const bookId = bookCount;
   const container = document.createElement("div");
@@ -22,42 +22,45 @@ function createSpellbook() {
 
   container.innerHTML = `
     <div style="display: flex; align-items: center; gap: 10px;">
-      <h3 class="bookHeading">Personal Spellbook ${bookId}</h3>
+      <button class="collapseBtn" style="font-size: 12px; padding: 4px 8px; background: none; border: none; cursor: pointer; font-size: 16px; line-height: 1;">▼</button>
+      <h3 class="bookHeading" style="margin: 0;">Personal Spellbook ${bookId}</h3>
       <button class="renameBtn" style="font-size: 12px; padding: 4px 8px;">Rename</button>
       <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
     </div>
-    <input type="text" class="customName" placeholder="Custom name (optional)" style="width: 300px; margin-bottom: 10px; display: none;">
-    
-    <label>Total Spell Levels (if not adding individually): <input type="number" class="totalLevels" min="0" value="0"></label><br>
+    <div class="bookBody">
+      <input type="text" class="customName" placeholder="Custom name (optional)" style="width: 300px; margin-bottom: 10px; display: none;">
+      
+      <label>Total Spell Levels (if not adding individually): <input type="number" class="totalLevels" min="0" value="0"></label><br>
 
-    <div style="margin: 10px 0;">
-      <strong>Scribing Tool:</strong>
-      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
-      <div style="display: grid; grid-template-columns: 320px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
-        <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand" style="margin-right: 6px;"> Arcanist's Scribing Wand (halve gp)</label>
-        <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
-        <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill" style="margin-right: 6px;"> Pegasus Quill (halve time)</label>
-        <label class="toolQuillBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolQuillBorrowed"> Borrowed</label>
+      <div style="margin: 10px 0;">
+        <strong>Scribing Tool:</strong>
+        <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
+        <div style="display: grid; grid-template-columns: 320px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
+          <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand" style="margin-right: 6px;"> Arcanist's Scribing Wand (halve gp)</label>
+          <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
+          <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill" style="margin-right: 6px;"> Pegasus Quill (halve time)</label>
+          <label class="toolQuillBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolQuillBorrowed"> Borrowed</label>
+        </div>
       </div>
-    </div>
-    
-    <div class="badgeContainer"></div>
-    
-    <div class="savantContainer">
-      <label style="display: none;" class="savantLabel">
-        <span class="savantText">Legacy Savant:</span>
-        <select class="savantSelect" style="margin-left: 5px;">
-          <option value="">None</option>
-        </select>
-      </label>
-    </div>
-    
-    <label><input type="checkbox" class="guild"> Guild Spellbook (school-locked)</label>
-    <label><input type="checkbox" class="schoolLock"> <span class="schoolLockLabel">Lock to School (prevents wrong schools)</span></label><br>
+      
+      <div class="badgeContainer"></div>
+      
+      <div class="savantContainer">
+        <label style="display: none;" class="savantLabel">
+          <span class="savantText">Legacy Savant:</span>
+          <select class="savantSelect" style="margin-left: 5px;">
+            <option value="">None</option>
+          </select>
+        </label>
+      </div>
+      
+      <label><input type="checkbox" class="guild"> Guild Spellbook (school-locked)</label>
+      <label><input type="checkbox" class="schoolLock"> <span class="schoolLockLabel">Lock to School (prevents wrong schools)</span></label><br>
 
-    <h4>Add Spells</h4>
-    <input type="text" class="spellInput" placeholder="Type a spell name">
-    <ul class="spellList" style="list-style: none; padding-left: 0;"></ul>
+      <h4>Add Spells</h4>
+      <input type="text" class="spellInput" placeholder="Type a spell name">
+      <ul class="spellList" style="list-style: none; padding-left: 0;"></ul>
+    </div>
   `;
 
   document.getElementById("spellbooksContainer").appendChild(container);
@@ -83,7 +86,52 @@ function createSpellbook() {
     toolQuillBorrowed: false  // Track if the Pegasus Quill is borrowed
   };
   spellbooks.push(book);
-  
+
+  // Apply saved state to book object if restoring from session storage
+  if (savedState) {
+    Object.assign(book, savedState);
+    // Restore tool radio selection
+    if (savedState.tool === "wand") {
+      container.querySelector(".toolWand").checked = true;
+    } else if (savedState.tool === "quill") {
+      container.querySelector(".toolQuill").checked = true;
+    }
+    container.querySelector(".toolWandBorrowed").checked = book.toolWandBorrowed;
+    container.querySelector(".toolQuillBorrowed").checked = book.toolQuillBorrowed;
+    updateToolBorrowedVisibility();
+    // Restore guild / school lock checkboxes
+    container.querySelector(".guild").checked = book.type === "guild";
+    container.querySelector(".schoolLock").checked = book.schoolLock;
+    // Restore total levels input
+    if (book.spells.length === 0 && savedState.manualLevels > 0) {
+      const totalLevelsInput = container.querySelector(".totalLevels");
+      totalLevelsInput.value = savedState.manualLevels;
+    }
+    // Hide total levels input if spells exist
+    if (book.spells.length > 0) {
+      const totalLevelsInput = container.querySelector(".totalLevels");
+      totalLevelsInput.disabled = true;
+      totalLevelsInput.style.opacity = "0.5";
+      totalLevelsInput.parentElement.style.display = "none";
+    }
+    // Restore collapse state
+    if (savedState.collapsed) {
+      container.querySelector(".bookBody").style.display = "none";
+      container.querySelector(".collapseBtn").textContent = "▶";
+    }
+  }
+
+  // Collapse button functionality
+  const collapseBtn = container.querySelector(".collapseBtn");
+  const bookBody = container.querySelector(".bookBody");
+  collapseBtn.addEventListener("click", () => {
+    const isCollapsed = bookBody.style.display === "none";
+    bookBody.style.display = isCollapsed ? "" : "none";
+    collapseBtn.textContent = isCollapsed ? "▼" : "▶";
+    book.collapsed = !isCollapsed;
+    saveToStorage();
+  });
+
   // Update the initial heading with correct number
   updateBookHeading(book, container);
 
@@ -672,6 +720,7 @@ function calculateCosts() {
   }
 
   generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCosts);
+  saveToStorage();
 }
 
 function optimizeBadgeMovements() {
@@ -1105,11 +1154,84 @@ function setupSpellAutocomplete(input, book, container) {
   window.addEventListener("scroll", updatePosition);
 }
 
+// Persist all state to session storage
+function saveToStorage() {
+  const state = {
+    playerName: document.getElementById("playerName").value,
+    combinedModOutput: document.getElementById("combinedModOutput").checked,
+    books: spellbooks.map(book => {
+      const container = document.getElementById(`spellbook${book.id}`);
+      let tool = "none";
+      if (container) {
+        if (container.querySelector(".toolWand").checked) tool = "wand";
+        else if (container.querySelector(".toolQuill").checked) tool = "quill";
+      }
+      const manualLevels = container ? parseInt(container.querySelector(".totalLevels").value) || 0 : 0;
+      return { ...book, tool, manualLevels };
+    })
+  };
+  sessionStorage.setItem("scribingCalc", JSON.stringify(state));
+}
+
+// Restore all state from session storage
+function restoreFromStorage() {
+  const raw = sessionStorage.getItem("scribingCalc");
+  if (!raw) return false;
+  const state = JSON.parse(raw);
+
+  document.getElementById("playerName").value = state.playerName || "";
+  document.getElementById("combinedModOutput").checked = state.combinedModOutput ?? true;
+
+  state.books.forEach(savedBook => {
+    createSpellbook(savedBook);
+    // After createSpellbook, the book object is the last one pushed
+    const book = spellbooks[spellbooks.length - 1];
+    const container = document.getElementById(`spellbook${book.id}`);
+    // Re-run modifier controls to rebuild badge UI from restored state
+    updateModifierControls(book, container);
+    updateSpellList(book, container);
+    updateBookHeading(book, container);
+  });
+
+  updateSchoolNumbers();
+  return true;
+}
+
+// Wipe all spells from all books, preserving all other settings
+function wipeSpells() {
+  if (!confirm("Remove all spells from all books? Badge settings, tools, and book configuration will be kept.")) return;
+  spellbooks.forEach(book => {
+    book.spells = [];
+    if (book.type === "guild") {
+      book.school = null;
+      book.schoolNumber = null;
+    } else if (!book.schoolLock) {
+      book.school = null;
+    }
+    const container = document.getElementById(`spellbook${book.id}`);
+    if (container) {
+      const totalLevelsInput = container.querySelector(".totalLevels");
+      totalLevelsInput.disabled = false;
+      totalLevelsInput.style.opacity = "1";
+      totalLevelsInput.parentElement.style.display = "block";
+      updateSpellList(book, container);
+      updateBookHeading(book, container);
+      updateModifierControls(book, container);
+    }
+  });
+  updateSchoolNumbers();
+  calculateCosts();
+}
+
 // Initialize
-createSpellbook();
-document.getElementById("addBook").addEventListener("click", createSpellbook);
+if (!restoreFromStorage()) {
+  createSpellbook();
+}
+document.getElementById("addBook").addEventListener("click", () => createSpellbook());
+document.getElementById("wipeSpells").addEventListener("click", wipeSpells);
 document.getElementById("playerName").addEventListener("input", calculateCosts);
 document.getElementById("combinedModOutput").addEventListener("change", calculateCosts);
+calculateCosts();
 
 // Spell data
 var ALL_SPELLS = [

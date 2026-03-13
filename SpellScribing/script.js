@@ -37,9 +37,9 @@ function createSpellbook(savedState = null) {
         <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
         <div style="display: grid; grid-template-columns: 320px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
           <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand" style="margin-right: 6px;"> Arcanist's Scribing Wand (halve gp)</label>
-          <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
+          <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
           <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill" style="margin-right: 6px;"> Pegasus Quill (halve time)</label>
-          <label class="toolQuillBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolQuillBorrowed"> Borrowed</label>
+          <label class="toolQuillBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; margin: 0;"><input type="checkbox" class="toolQuillBorrowed"> Borrowed</label>
         </div>
       </div>
       
@@ -411,7 +411,7 @@ function updateModifierControls(book, container) {
       stateDiv.style.marginLeft = "30px";
       stateDiv.style.marginTop = "5px";
       stateDiv.style.fontSize = "0.9em";
-      stateDiv.style.color = "#555";
+      stateDiv.className = "badge-state-row";
       
       const startedLabel = document.createElement("label");
       startedLabel.style.marginRight = "15px";
@@ -555,12 +555,12 @@ function updateSpellList(book, container) {
   Object.keys(byLevel).sort((a, b) => a - b).forEach(level => {
     byLevel[level].sort((a, b) => a.name.localeCompare(b.name)).forEach(spell => {
       const li = document.createElement("li");
+      li.className = "spell-chip";
       li.style.display = "flex";
       li.style.justifyContent = "space-between";
       li.style.alignItems = "center";
       li.style.padding = "5px";
       li.style.margin = "3px 0";
-      li.style.backgroundColor = "#ecf0f1";
       li.style.borderRadius = "4px";
       
       const spellInfo = document.createElement("span");
@@ -1037,10 +1037,11 @@ function formatList(items) {
 function setupSpellAutocomplete(input, book, container) {
   let currentFocus = -1;
   const dropdown = document.createElement("div");
+  const cs = () => getComputedStyle(document.documentElement);
   dropdown.className = "autocomplete-items";
   dropdown.style.position = "absolute";
-  dropdown.style.border = "1px solid #ccc";
-  dropdown.style.backgroundColor = "#fff";
+  dropdown.style.border = `1px solid ${cs().getPropertyValue("--border").trim()}`;
+  dropdown.style.backgroundColor = cs().getPropertyValue("--surface").trim();
   dropdown.style.zIndex = "1000";
   dropdown.style.maxHeight = "200px";
   dropdown.style.overflowY = "auto";
@@ -1092,8 +1093,10 @@ function setupSpellAutocomplete(input, book, container) {
 
   function highlightItem() {
     const items = dropdown.querySelectorAll("div");
+    const highlight = cs().getPropertyValue("--spell-bg").trim();
+    const surface = cs().getPropertyValue("--surface").trim();
     items.forEach((item, idx) => {
-      item.style.backgroundColor = idx === currentFocus ? "#bde4ff" : "#fff";
+      item.style.backgroundColor = idx === currentFocus ? highlight : "";
     });
   }
 
@@ -1152,10 +1155,47 @@ function setupSpellAutocomplete(input, book, container) {
   window.addEventListener("scroll", updatePosition);
 }
 
-// Persist all state to session storage
+// Save/restore site-wide preferences (player name, dark mode)
+function savePrefs() {
+  sessionStorage.setItem("sitePrefs", JSON.stringify({
+    playerName: document.getElementById("playerName").value,
+    darkMode: document.body.classList.contains("dark")
+  }));
+}
+
+function restorePrefs() {
+  const raw = sessionStorage.getItem("sitePrefs");
+  if (!raw) return;
+  const prefs = JSON.parse(raw);
+  if (prefs.playerName) document.getElementById("playerName").value = prefs.playerName;
+  if (prefs.darkMode) enableDarkMode(false);
+}
+
+function refreshDropdownStyles() {
+  const cs = getComputedStyle(document.documentElement);
+  document.querySelectorAll(".autocomplete-items").forEach(el => {
+    el.style.border = `1px solid ${cs.getPropertyValue("--border").trim()}`;
+    el.style.backgroundColor = cs.getPropertyValue("--surface").trim();
+  });
+}
+
+function enableDarkMode(save = true) {
+  document.body.classList.add("dark");
+  document.getElementById("darkModeToggle").textContent = "☀ Light Mode";
+  refreshDropdownStyles();
+  if (save) savePrefs();
+}
+
+function disableDarkMode(save = true) {
+  document.body.classList.remove("dark");
+  document.getElementById("darkModeToggle").textContent = "🌙 Dark Mode";
+  refreshDropdownStyles();
+  if (save) savePrefs();
+}
+
+// Persist scribing calc state to session storage
 function saveToStorage() {
   const state = {
-    playerName: document.getElementById("playerName").value,
     combinedModOutput: document.getElementById("combinedModOutput").checked,
     books: spellbooks.map(book => {
       const container = document.getElementById(`spellbook${book.id}`);
@@ -1177,7 +1217,6 @@ function restoreFromStorage() {
   if (!raw) return false;
   const state = JSON.parse(raw);
 
-  document.getElementById("playerName").value = state.playerName || "";
   document.getElementById("combinedModOutput").checked = state.combinedModOutput ?? true;
 
   state.books.forEach(savedBook => {
@@ -1222,12 +1261,16 @@ function wipeSpells() {
 }
 
 // Initialize
+restorePrefs();
 if (!restoreFromStorage()) {
   createSpellbook();
 }
 document.getElementById("addBook").addEventListener("click", () => createSpellbook());
 document.getElementById("wipeSpells").addEventListener("click", wipeSpells);
-document.getElementById("playerName").addEventListener("input", calculateCosts);
+document.getElementById("darkModeToggle").addEventListener("click", () => {
+  document.body.classList.contains("dark") ? disableDarkMode() : enableDarkMode();
+});
+document.getElementById("playerName").addEventListener("input", () => { savePrefs(); calculateCosts(); });
 document.getElementById("combinedModOutput").addEventListener("change", calculateCosts);
 calculateCosts();
 

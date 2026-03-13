@@ -37,11 +37,12 @@ function createSpellbook() {
     <div style="margin: 10px 0;">
       <strong>Scribing Tool:</strong>
       <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
-      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand"> Arcanist's Scribing Wand (halve gp)</label>
-      <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill"> Pegasus Quill (halve time)</label>
-      <span class="toolBorrowedWrapper" style="display: none; margin-left: 10px;">
-        <label style="display: inline;"><input type="checkbox" class="toolBorrowed"> Borrowed</label>
-      </span>
+      <div style="display: grid; grid-template-columns: 290px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
+        <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand" style="margin-right: 6px;"> Arcanist's Scribing Wand (halve gp)</label>
+        <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
+        <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill" style="margin-right: 6px;"> Pegasus Quill (halve time)</label>
+        <label class="toolQuillBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolQuillBorrowed"> Borrowed</label>
+      </div>
     </div>
     
     <div class="badgeContainer"></div>
@@ -89,47 +90,42 @@ function createSpellbook() {
     badgeStartedAttached: {},  // Track if badge started attached for each school
     badgeStaysAttached: {},  // Track if badge stays attached for each school
     badgeBorrowed: {},  // Track if each school's badge is borrowed
-    toolBorrowed: false  // Track if the scribing tool (wand or quill) is borrowed
+    toolWandBorrowed: false,  // Track if the Arcanist's Scribing Wand is borrowed
+    toolQuillBorrowed: false  // Track if the Pegasus Quill is borrowed
   };
   spellbooks.push(book);
   
   // Update the initial heading with correct number
   updateBookHeading(book, container);
 
+  // Helper: show/hide borrowed checkboxes based on which tool radio is selected
+  function updateToolBorrowedVisibility() {
+    const toolWand = container.querySelector(".toolWand").checked;
+    const toolQuill = container.querySelector(".toolQuill").checked;
+    container.querySelector(".toolWandBorrowedLabel").style.visibility = toolWand ? "visible" : "hidden";
+    container.querySelector(".toolQuillBorrowedLabel").style.visibility = toolQuill ? "visible" : "hidden";
+  }
+
   // Event listeners for modifiers
   [".toolNone", ".toolWand", ".toolQuill", ".totalLevels"].forEach(sel => {
     const element = container.querySelector(sel);
     if (element) {
       element.addEventListener("input", () => {
+        updateToolBorrowedVisibility();
         updateModifierControls(book, container);
         calculateCosts();
       });
     }
   });
 
-  // Show/hide the "Borrowed" checkbox for tools when a non-none tool is selected,
-  // and reset toolBorrowed when switching back to none
-  [".toolNone", ".toolWand", ".toolQuill"].forEach(sel => {
-    const element = container.querySelector(sel);
-    if (element) {
-      element.addEventListener("change", () => {
-        const toolNone = container.querySelector(".toolNone").checked;
-        const borrowedWrapper = container.querySelector(".toolBorrowedWrapper");
-        if (toolNone) {
-          borrowedWrapper.style.display = "none";
-          book.toolBorrowed = false;
-          container.querySelector(".toolBorrowed").checked = false;
-        } else {
-          borrowedWrapper.style.display = "inline";
-        }
-        calculateCosts();
-      });
-    }
+  // Borrowed checkboxes for each scribing tool (state persists regardless of which tool is selected)
+  container.querySelector(".toolWandBorrowed").addEventListener("change", function() {
+    book.toolWandBorrowed = this.checked;
+    calculateCosts();
   });
 
-  // Borrowed checkbox for scribing tool
-  container.querySelector(".toolBorrowed").addEventListener("change", function() {
-    book.toolBorrowed = this.checked;
+  container.querySelector(".toolQuillBorrowed").addEventListener("change", function() {
+    book.toolQuillBorrowed = this.checked;
     calculateCosts();
   });
 
@@ -926,15 +922,14 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     if (book.type === "guild" && book.spells.length > 0) {
       borrowedGuildBookNames.add(getBookDisplayName(book));
     }
-    // Collect borrowed scribing tools
-    if (book.toolBorrowed) {
-      const container = document.getElementById(`spellbook${book.id}`);
-      if (container) {
-        if (container.querySelector(".toolWand").checked) {
-          borrowedTools.add("Arcanist's Scribing Wand");
-        } else if (container.querySelector(".toolQuill").checked) {
-          borrowedTools.add("Pegasus Quill");
-        }
+    // Collect borrowed scribing tools (only if that tool's radio is also selected)
+    const container = document.getElementById(`spellbook${book.id}`);
+    if (container) {
+      if (book.toolWandBorrowed && container.querySelector(".toolWand").checked) {
+        borrowedTools.add("Arcanist's Scribing Wand");
+      }
+      if (book.toolQuillBorrowed && container.querySelector(".toolQuill").checked) {
+        borrowedTools.add("Pegasus Quill");
       }
     }
   });
@@ -1006,7 +1001,13 @@ function setupSpellAutocomplete(input, book, container) {
   dropdown.style.maxHeight = "200px";
   dropdown.style.overflowY = "auto";
   dropdown.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+  dropdown.style.display = "none";
   document.body.appendChild(dropdown);
+
+  function closeDropdown() {
+    dropdown.innerHTML = "";
+    dropdown.style.display = "none";
+  }
 
   function updatePosition() {
     const rect = input.getBoundingClientRect();
@@ -1017,7 +1018,10 @@ function setupSpellAutocomplete(input, book, container) {
 
   function renderMatches(matches) {
     dropdown.innerHTML = "";
-    if (!matches.length) return;
+    if (!matches.length) {
+      dropdown.style.display = "none";
+      return;
+    }
     
     currentFocus = 0;
     matches.forEach((spell, idx) => {
@@ -1032,12 +1036,13 @@ function setupSpellAutocomplete(input, book, container) {
       item.addEventListener("click", () => {
         addSpellToBook(spell, book, container);
         input.value = "";
-        dropdown.innerHTML = "";
+        closeDropdown();
         input.focus();
       });
       
       dropdown.appendChild(item);
     });
+    dropdown.style.display = "block";
     highlightItem();
   }
 
@@ -1053,7 +1058,7 @@ function setupSpellAutocomplete(input, book, container) {
     updatePosition();
     
     if (!val) {
-      dropdown.innerHTML = "";
+      closeDropdown();
       return;
     }
 
@@ -1096,7 +1101,7 @@ function setupSpellAutocomplete(input, book, container) {
   });
 
   document.addEventListener("click", (e) => {
-    if (e.target !== input) dropdown.innerHTML = "";
+    if (e.target !== input) closeDropdown();
   });
 
   window.addEventListener("resize", updatePosition);

@@ -964,9 +964,17 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
 logMsg = logMsg.replace(/, $/, '');
 logMsg += `\nNotes-and-pings link: [x]\n${totalGuildFee > 0 ? "Trading link: [x]\n" : ""}<@&1454706630934401169>`;
 
-document.getElementById("discordMessages").innerHTML = 
-  `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a><br/>${notesMsg}\n\n#trading:\n${tradingMsg}\n\n#scribing-log:\n${logMsg}`;
+document.getElementById("discordMessages").innerHTML =
+  renderCopyBlock("notes-and-pings", `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a>`, notesMsg) +
+  renderCopyBlock("trading", "#trading:", tradingMsg) +
+  renderCopyBlock("scribing-log", "#scribing-log:", logMsg);
   }
+// Helper: render a labelled message block with a Discord-style copy button
+function renderCopyBlock(id, labelHTML, text) {
+  const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<div style="margin-bottom: 20px;"><div style="margin-bottom: 4px;">${labelHTML}</div><div style="position: relative;"><button onclick="navigator.clipboard.writeText(document.getElementById('copyText_${id}').innerText);const btn=this;btn.textContent='✓ Copied';btn.style.backgroundColor='#28a745';setTimeout(()=>{btn.textContent='⎘ Copy';btn.style.backgroundColor='';},2000);" style="position: absolute; top: 6px; right: 6px; padding: 3px 10px; font-size: 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">⎘ Copy</button><pre id="copyText_${id}" style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 6px; padding: 10px 70px 10px 10px; white-space: pre-wrap; word-break: break-word; font-family: monospace; margin: 0;">${escapedText}</pre></div></div>`;
+}
+
 // Helper: format a list with "and" before the last item
 function formatList(items) {
   if (items.length === 1) return items[0];

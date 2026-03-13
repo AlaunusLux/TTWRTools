@@ -39,6 +39,9 @@ function createSpellbook() {
       <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
       <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand"> Arcanist's Scribing Wand (halve gp)</label>
       <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill"> Pegasus Quill (halve time)</label>
+      <span class="toolBorrowedWrapper" style="display: none; margin-left: 10px;">
+        <label style="display: inline;"><input type="checkbox" class="toolBorrowed"> Borrowed</label>
+      </span>
     </div>
     
     <div class="badgeContainer"></div>
@@ -85,7 +88,8 @@ function createSpellbook() {
     legacySavant: null,  // Track which school has legacy savant
     badgeStartedAttached: {},  // Track if badge started attached for each school
     badgeStaysAttached: {},  // Track if badge stays attached for each school
-    badgeBorrowed: {}  // NEW: Track if each school's badge is borrowed
+    badgeBorrowed: {},  // Track if each school's badge is borrowed
+    toolBorrowed: false  // Track if the scribing tool (wand or quill) is borrowed
   };
   spellbooks.push(book);
   
@@ -101,6 +105,32 @@ function createSpellbook() {
         calculateCosts();
       });
     }
+  });
+
+  // Show/hide the "Borrowed" checkbox for tools when a non-none tool is selected,
+  // and reset toolBorrowed when switching back to none
+  [".toolNone", ".toolWand", ".toolQuill"].forEach(sel => {
+    const element = container.querySelector(sel);
+    if (element) {
+      element.addEventListener("change", () => {
+        const toolNone = container.querySelector(".toolNone").checked;
+        const borrowedWrapper = container.querySelector(".toolBorrowedWrapper");
+        if (toolNone) {
+          borrowedWrapper.style.display = "none";
+          book.toolBorrowed = false;
+          container.querySelector(".toolBorrowed").checked = false;
+        } else {
+          borrowedWrapper.style.display = "inline";
+        }
+        calculateCosts();
+      });
+    }
+  });
+
+  // Borrowed checkbox for scribing tool
+  container.querySelector(".toolBorrowed").addEventListener("change", function() {
+    book.toolBorrowed = this.checked;
+    calculateCosts();
   });
 
   container.querySelector(".guild").addEventListener("change", function() {
@@ -874,6 +904,10 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
   // Collect schools scribed into personal books (for borrowing line)
   const borrowedBookSchools = new Set();
   const borrowedBadgeSchools = new Set();
+  // Collect guild spellbook names that were scribed from (personal books borrow from guild books)
+  const borrowedGuildBookNames = new Set();
+  // Collect borrowed scribing tools
+  const borrowedTools = new Set();
 
   spellbooks.forEach(book => {
     if (book.type === "personal" && book.spells.length > 0) {
@@ -888,10 +922,27 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
         }
       });
     }
+    // Collect guild books that have spells scribed into them (the player borrows the guild book)
+    if (book.type === "guild" && book.spells.length > 0) {
+      borrowedGuildBookNames.add(getBookDisplayName(book));
+    }
+    // Collect borrowed scribing tools
+    if (book.toolBorrowed) {
+      const container = document.getElementById(`spellbook${book.id}`);
+      if (container) {
+        if (container.querySelector(".toolWand").checked) {
+          borrowedTools.add("Arcanist's Scribing Wand");
+        } else if (container.querySelector(".toolQuill").checked) {
+          borrowedTools.add("Pegasus Quill");
+        }
+      }
+    }
   });
 
   const sortedBookSchools = [...borrowedBookSchools].sort();
   const sortedBadgeSchools = [...borrowedBadgeSchools].sort();
+  const sortedGuildBookNames = [...borrowedGuildBookNames].sort();
+  const sortedBorrowedTools = [...borrowedTools].sort();
 
   let borrowingParts = [];
 
@@ -902,11 +953,22 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     borrowingParts.push(bookLabel);
   }
 
+  // Add guild spellbook names that were scribed into
+  if (sortedGuildBookNames.length > 0) {
+    const guildBookLabel = formatList(sortedGuildBookNames);
+    borrowingParts.push(guildBookLabel);
+  }
+
   if (sortedBadgeSchools.length > 0) {
     const badgeLabel = sortedBadgeSchools.length === 1
       ? `Badge of the Savant (${sortedBadgeSchools[0]})`
       : `Badges of the Savant (${formatList(sortedBadgeSchools)})`;
     borrowingParts.push(badgeLabel);
+  }
+
+  // Add borrowed scribing tools
+  if (sortedBorrowedTools.length > 0) {
+    borrowingParts.push(formatList(sortedBorrowedTools));
   }
 
   const borrowingLine = borrowingParts.length > 0

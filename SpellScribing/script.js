@@ -85,7 +85,7 @@ function createSpellbook() {
     legacySavant: null,  // Track which school has legacy savant
     badgeStartedAttached: {},  // Track if badge started attached for each school
     badgeStaysAttached: {},  // Track if badge stays attached for each school
-     badgeBorrowed: {}  // NEW: Track if each school's badge is borrowed
+    badgeBorrowed: {}  // NEW: Track if each school's badge is borrowed
   };
   spellbooks.push(book);
   
@@ -776,7 +776,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
 
   let notesMsg = "";
   let tradingMsg = "";
-  let logMsg = `Name: ${playerName}\n`;
+  let logMsg = `Name: ${playerName}`;
 
   // Track if we've seen the first personal spellbook
   let firstPersonalBookSeen = false;
@@ -864,66 +864,68 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
       notesMsg += `${playerName} spends ${gp} gp${gpModText} and ${hours} hours${timeModText} scribing ${spellList} into ${bookName}\n`;
     }
 
-    logMsg += `Scribed ${spellList} into ${bookName}, `;
+    logMsg += `\nScribed ${spellList} into ${bookName}.`;
   });
 
   if(spellSlotCosts != "Spell Slot Costs:\n") {
       notesMsg += spellSlotCosts;
   }
 
-  if (totalGuildFee > 0) {
-    // Collect schools scribed into personal books (for borrowing line)
-    const borrowedBookSchools = new Set();
-    const borrowedBadgeSchools = new Set();
+  // Collect schools scribed into personal books (for borrowing line)
+  const borrowedBookSchools = new Set();
+  const borrowedBadgeSchools = new Set();
 
-    spellbooks.forEach(book => {
-      if (book.type === "personal" && book.spells.length > 0) {
-        const schools = [...new Set(book.spells.map(s => s.school))];
-        schools.forEach(s => borrowedBookSchools.add(s));
-      }
-      // Collect badge schools marked as borrowed
-      if (book.badges) {
-        Object.keys(book.badges).forEach(school => {
-          if (book.badges[school] && book.badgeBorrowed && book.badgeBorrowed[school]) {
-            borrowedBadgeSchools.add(school);
-          }
-        });
-      }
-    });
-
-    const sortedBookSchools = [...borrowedBookSchools].sort();
-    const sortedBadgeSchools = [...borrowedBadgeSchools].sort();
-
-    let borrowingParts = [];
-
-    if (sortedBookSchools.length > 0) {
-      const bookLabel = sortedBookSchools.length === 1
-        ? `${sortedBookSchools[0]} spellbook`
-        : formatList(sortedBookSchools) + " spellbooks";
-      borrowingParts.push(bookLabel);
+  spellbooks.forEach(book => {
+    if (book.type === "personal" && book.spells.length > 0) {
+      const schools = [...new Set(book.spells.map(s => s.school))];
+      schools.forEach(s => borrowedBookSchools.add(s));
     }
-
-    if (sortedBadgeSchools.length > 0) {
-      const badgeLabel = sortedBadgeSchools.length === 1
-        ? `Badge of the Savant (${sortedBadgeSchools[0]})`
-        : `Badges of the Savant (${formatList(sortedBadgeSchools)})`;
-      borrowingParts.push(badgeLabel);
+    // Collect badge schools marked as borrowed
+    if (book.badges) {
+      Object.keys(book.badges).forEach(school => {
+        if (book.badges[school] && book.badgeBorrowed && book.badgeBorrowed[school]) {
+          borrowedBadgeSchools.add(school);
+        }
+      });
     }
+  });
 
-    const borrowingLine = borrowingParts.length > 0
-      ? `Borrowing and returning: ${borrowingParts.join(", ")}\n`
-      : "";
+  const sortedBookSchools = [...borrowedBookSchools].sort();
+  const sortedBadgeSchools = [...borrowedBadgeSchools].sort();
 
-    tradingMsg = `Name: ${playerName}\n${borrowingLine}Paying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;
+  let borrowingParts = [];
+
+  if (sortedBookSchools.length > 0) {
+    const bookLabel = sortedBookSchools.length === 1
+      ? `${sortedBookSchools[0]} spellbook`
+      : formatList(sortedBookSchools) + " spellbooks";
+    borrowingParts.push(bookLabel);
   }
 
-  logMsg = logMsg.replace(/, $/, '');
-  logMsg += `\nNotes-and-pings link: [x]\n${totalGuildFee > 0 ? "Trading link: [x]\n" : ""}<@&1454706630934401169>`;
+  if (sortedBadgeSchools.length > 0) {
+    const badgeLabel = sortedBadgeSchools.length === 1
+      ? `Badge of the Savant (${sortedBadgeSchools[0]})`
+      : `Badges of the Savant (${formatList(sortedBadgeSchools)})`;
+    borrowingParts.push(badgeLabel);
+  }
 
-  document.getElementById("discordMessages").innerHTML = 
-    `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a><br/>${notesMsg}\n\n${totalGuildFee > 0 ? `#trading:\n${tradingMsg}\n\n` : ''}#scribing-log:\n${logMsg}`;
-}
+  const borrowingLine = borrowingParts.length > 0
+    ? `Borrowing and returning: ${borrowingParts.join(", ")}\n`
+    : "";
 
+  tradingMsg = `Name: ${playerName}\n${borrowingLine}`
+  if(totalGuildFee > 0) {
+    tradingMsg += `Paying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;
+  } else {
+    tradingMsg += `From: Discipuli Arcanum (ping <@171484787482165249> or guild role)\n`;}
+
+
+logMsg = logMsg.replace(/, $/, '');
+logMsg += `\nNotes-and-pings link: [x]\n${totalGuildFee > 0 ? "Trading link: [x]\n" : ""}<@&1454706630934401169>`;
+
+document.getElementById("discordMessages").innerHTML = 
+  `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a><br/>${notesMsg}\n\n#trading:\n${tradingMsg}\n\n#scribing-log:\n${logMsg}`;
+  }
 // Helper: format a list with "and" before the last item
 function formatList(items) {
   if (items.length === 1) return items[0];

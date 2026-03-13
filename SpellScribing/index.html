@@ -94,7 +94,7 @@
       background: white;
       padding: 15px;
       border-radius: 8px;
-      margin-top: 20px;
+      margin-bottom: 16px;
       white-space: pre-wrap;
       font-family: monospace;
     }
@@ -106,24 +106,45 @@
     .autocomplete-items div:hover {
       background-color: #e3f2fd;
     }
+    @media (max-width: 900px) {
+      .layout-columns {
+        flex-direction: column !important;
+      }
+      .layout-right {
+        width: 100% !important;
+        position: static !important;
+        max-height: none !important;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>D&D Spell Scribing Calculator</h1>
-  
-  <div class="player-info">
-    <label for="playerName">Player Name:</label>
-    <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
-    <label style="margin-left: 20px;">
-      <input type="checkbox" id="combinedModOutput" checked> Combined modifier output
-    </label>
+
+  <div class="layout-columns" style="display: flex; gap: 24px; align-items: flex-start;">
+
+    <!-- Left column: controls and spellbooks -->
+    <div style="flex: 1; min-width: 0;">
+      <div class="player-info">
+        <label for="playerName">Player Name:</label>
+        <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
+        <label style="margin-left: 20px;">
+          <input type="checkbox" id="combinedModOutput" checked> Combined modifier output
+        </label>
+      </div>
+
+      <button id="addBook">+ Add Spellbook</button>
+      <button id="wipeSpells" style="background-color: #e67e22;">🗑 Wipe All Spells</button>
+      <div id="spellbooksContainer"></div>
+    </div>
+
+    <!-- Right column: output, sticky so it stays in view while scrolling -->
+    <div class="layout-right" style="width: 380px; flex-shrink: 0; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto;">
+      <div id="output"></div>
+      <div id="discordMessages"></div>
+    </div>
+
   </div>
-  
-  <button id="addBook">+ Add Spellbook</button>
-  <button id="wipeSpells" style="background-color: #e67e22;">🗑 Wipe All Spells</button>
-  <div id="spellbooksContainer"></div>
-  <div id="output"></div>
-  <div id="discordMessages"></div>
   <script src="script.js"></script>
 </body>
 </html>

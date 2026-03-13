@@ -22,7 +22,7 @@ function createSpellbook(savedState = null) {
 
   container.innerHTML = `
     <div style="display: flex; align-items: center; gap: 10px;">
-      <button class="collapseBtn" style="font-size: 12px; padding: 4px 8px; background: none; border: none; cursor: pointer; font-size: 16px; line-height: 1;">▼</button>
+      <button class="collapseBtn" style="font-size: 16px; line-height: 1; padding: 4px 8px; background: none; border: none; cursor: pointer; color: #333;">▼</button>
       <h3 class="bookHeading" style="margin: 0;">Personal Spellbook ${bookId}</h3>
       <button class="renameBtn" style="font-size: 12px; padding: 4px 8px;">Rename</button>
       <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
@@ -89,7 +89,14 @@ function createSpellbook(savedState = null) {
 
   // Apply saved state to book object if restoring from session storage
   if (savedState) {
-    Object.assign(book, savedState);
+    // Restore only the user-controlled fields, not structural ids assigned by createSpellbook
+    const { type, customName, school, schoolLock, savedSchoolLock,
+            badges, legacySavant, badgeStartedAttached, badgeStaysAttached,
+            badgeBorrowed, toolWandBorrowed, toolQuillBorrowed, collapsed } = savedState;
+    Object.assign(book, { type, customName, school, schoolLock, savedSchoolLock,
+                          badges, legacySavant, badgeStartedAttached, badgeStaysAttached,
+                          badgeBorrowed, toolWandBorrowed, toolQuillBorrowed, collapsed });
+    book.spells = savedState.spells || [];
     // Restore tool radio selection
     if (savedState.tool === "wand") {
       container.querySelector(".toolWand").checked = true;
@@ -369,18 +376,6 @@ function updateModifierControls(book, container) {
   // Show badges and savant for both personal and guild books
   // Create badge checkboxes for each school
   badgeContainer.innerHTML = "";
-  
-  // Clean up badges for schools that are no longer in the book
-  if (book.badges) {
-    Object.keys(book.badges).forEach(school => {
-      if (!schools.includes(school)) {
-        delete book.badges[school];
-        delete book.badgeStartedAttached[school];
-        delete book.badgeStaysAttached[school];
-        delete book.badgeBorrowed[school];
-      }
-    });
-  }
   
   schools.forEach(school => {
     const badgeDiv = document.createElement("div");
@@ -728,9 +723,10 @@ function optimizeBadgeMovements() {
   const badgeNeeds = []; // { bookId, bookName, school, startedAttached, staysAttached }
   
   spellbooks.forEach(book => {
+    const activeSchools = new Set(book.spells.map(s => s.school));
     if (book.badges) {
       Object.keys(book.badges).forEach(school => {
-        if (book.badges[school]) {
+        if (book.badges[school] && activeSchools.has(school)) {
           badgeNeeds.push({
             book: book,
             bookId: book.id,
@@ -892,9 +888,10 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
         timeModifiers.push("Pegasus Quill");
       }
       
-      // Badges - combine all schools into one badge entry
+      // Badges - combine all schools into one badge entry (only for schools with active spells)
       if (book.badges) {
-        const badgeSchools = Object.keys(book.badges).filter(school => book.badges[school]).sort();
+        const activeSchools = new Set(book.spells.map(s => s.school));
+        const badgeSchools = Object.keys(book.badges).filter(school => book.badges[school] && activeSchools.has(school)).sort();
         if (badgeSchools.length === 1) {
           const badgeText = `Badge of the Savant [${badgeSchools[0]}]`;
           gpModifiers.push(badgeText);
@@ -906,8 +903,8 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
         }
       }
       
-      // Legacy Savant - only one school
-      if (book.legacySavant) {
+      // Legacy Savant - only one school, only if that school has active spells
+      if (book.legacySavant && book.spells.some(s => s.school === book.legacySavant)) {
         const savantText = `${book.legacySavant} Savant [Legacy]`;
         gpModifiers.push(savantText);
         timeModifiers.push(savantText);
@@ -947,10 +944,11 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
       const schools = [...new Set(book.spells.map(s => s.school))];
       schools.forEach(s => borrowedBookSchools.add(s));
     }
-    // Collect badge schools marked as borrowed
+    // Collect badge schools marked as borrowed (only for schools with active spells)
     if (book.badges) {
+      const activeSchools = new Set(book.spells.map(s => s.school));
       Object.keys(book.badges).forEach(school => {
-        if (book.badges[school] && book.badgeBorrowed && book.badgeBorrowed[school]) {
+        if (book.badges[school] && activeSchools.has(school) && book.badgeBorrowed && book.badgeBorrowed[school]) {
           borrowedBadgeSchools.add(school);
         }
       });

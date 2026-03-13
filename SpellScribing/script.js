@@ -796,18 +796,18 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     // Determine book name for output
     let bookName;
     if (book.customName) {
-      bookName = book.customName + ".";
+      bookName = book.customName;
     } else if (book.type === "guild" && book.school) {
-      bookName = `${book.school} Spellbook ${book.schoolNumber}.`;
+      bookName = `${book.school} Spellbook ${book.schoolNumber}`;
     } else if (book.type === "guild") {
-      bookName = `Guild Spellbook.`;
+      bookName = `Guild Spellbook`;
     } else {
       // For personal spellbooks
       if (!firstPersonalBookSeen && book.personalNumber === 1) {
-        bookName = "their personal spellbook from a guild spellbook."; //need to possibly pluralize this if it's multiple spell schools
+        bookName = "their personal spellbook from a guild spellbook"; //need to possibly pluralize this if it's multiple spell schools
         firstPersonalBookSeen = true;
       } else {
-        bookName = `Personal Spellbook ${book.personalNumber} from a guild spellbook.`;
+        bookName = `Personal Spellbook ${book.personalNumber} from a guild spellbook`;
       }
     }
 
@@ -871,7 +871,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
       notesMsg += `${playerName} spends ${gp} gp${gpModText} and ${hours} hours${timeModText} scribing ${spellList} into ${bookName}\n`;
     }
 
-    logMsg += `\nScribed ${spellList} into ${bookName}`;
+    logMsg += `\nScribed ${spellList} into ${bookName}.`;
   });
 
   if(spellSlotCosts != "Spell Slot Costs:\n") {

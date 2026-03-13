@@ -1,7 +1,3 @@
-const baseGP = 50;
-const scribingFee = 20;
-const baseHours = 2;
-
 let bookCount = 0;
 const spellbooks = [];
 
@@ -37,7 +33,7 @@ function createSpellbook() {
     <div style="margin: 10px 0;">
       <strong>Scribing Tool:</strong>
       <label style="margin-left: 10px;"><input type="radio" name="scribingTool${bookId}" value="none" checked class="toolNone"> None</label>
-      <div style="display: grid; grid-template-columns: 290px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
+      <div style="display: grid; grid-template-columns: 320px max-content; gap: 4px 12px; margin-left: 30px; margin-top: 4px; align-items: center;">
         <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="wand" class="toolWand" style="margin-right: 6px;"> Arcanist's Scribing Wand (halve gp)</label>
         <label class="toolWandBorrowedLabel" style="grid-column: 2; visibility: hidden; font-size: 0.9em; color: #555; margin: 0;"><input type="checkbox" class="toolWandBorrowed"> Borrowed</label>
         <label style="grid-column: 1; margin: 0;"><input type="radio" name="scribingTool${bookId}" value="quill" class="toolQuill" style="margin-right: 6px;"> Pegasus Quill (halve time)</label>
@@ -46,10 +42,6 @@ function createSpellbook() {
     </div>
     
     <div class="badgeContainer"></div>
-    
-    <div class="badgeStateContainer" style="margin-left: 20px; font-size: 0.9em; color: #555;">
-      <!-- Badge state checkboxes will be added here dynamically -->
-    </div>
     
     <div class="savantContainer">
       <label style="display: none;" class="savantLabel">
@@ -62,14 +54,11 @@ function createSpellbook() {
     
     <label><input type="checkbox" class="guild"> Guild Spellbook (school-locked)</label>
     <label><input type="checkbox" class="schoolLock"> <span class="schoolLockLabel">Lock to School (prevents wrong schools)</span></label><br>
-    <div class="modifierWarning" style="color: red; font-size: 12px; display: none; margin-top: 5px;"></div>
 
     <h4>Add Spells</h4>
     <input type="text" class="spellInput" placeholder="Type a spell name">
     <ul class="spellList" style="list-style: none; padding-left: 0;"></ul>
   `;
-
-  document.getElementById("spellbooksContainer").appendChild(container);
 
   document.getElementById("spellbooksContainer").appendChild(container);
 
@@ -306,13 +295,10 @@ function updateBookHeading(book, container) {
 
 function updateModifierControls(book, container) {
   const badgeContainer = container.querySelector(".badgeContainer");
-  const savantContainer = container.querySelector(".savantContainer");
   const savantLabel = container.querySelector(".savantLabel");
-  const savantSelect = container.querySelector(".savantSelect");
   const schoolLockLabel = container.querySelector(".schoolLockLabel");
   const guildCheckbox = container.querySelector(".guild");
   const schoolLockCheckbox = container.querySelector(".schoolLock");
-  const warningDiv = container.querySelector(".modifierWarning");
   
   // Get unique schools in this book
   const schools = [...new Set(book.spells.map(s => s.school))].sort();
@@ -335,8 +321,6 @@ function updateModifierControls(book, container) {
   // Show badges and savant for both personal and guild books
   // Create badge checkboxes for each school
   badgeContainer.innerHTML = "";
-  const badgeStateContainer = container.querySelector(".badgeStateContainer");
-  badgeStateContainer.innerHTML = ""; // Clear this, we'll add states inline now
   
   // Clean up badges for schools that are no longer in the book
   if (book.badges) {
@@ -407,7 +391,7 @@ function updateModifierControls(book, container) {
       staysLabel.appendChild(staysCheckbox);
       staysLabel.appendChild(document.createTextNode(` Stays attached`));
 
-      // NEW: Borrowed checkbox
+      // Borrowed checkbox
       const borrowedLabel = document.createElement("label");
       borrowedLabel.style.display = "inline-block";
       const borrowedCheckbox = document.createElement("input");
@@ -487,9 +471,6 @@ function updateModifierControls(book, container) {
     guildCheckbox.disabled = false;
     schoolLockCheckbox.disabled = false;
   }
-  
-  // Warning messages (currently not needed with new system)
-  warningDiv.style.display = "none";
 }
 
 function updateSchoolNumbers() {
@@ -690,7 +671,7 @@ function calculateCosts() {
 
 function optimizeBadgeMovements() {
   // Collect all books that need badges
-  const badgeNeeds = []; // { book, school, startedAttached, staysAttached }
+  const badgeNeeds = []; // { bookId, bookName, school, startedAttached, staysAttached }
   
   spellbooks.forEach(book => {
     if (book.badges) {
@@ -738,7 +719,7 @@ function optimizeBadgeMovements() {
       return a.school.localeCompare(b.school);
     });
     
-    bookNeeds.forEach((need, index) => {
+    bookNeeds.forEach(need => {
       // Attach badge
       if (need.startedAttached) {
         allMovements.push({
@@ -815,11 +796,11 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     // Determine book name for output
     let bookName;
     if (book.customName) {
-      bookName = book.customName;
+      bookName = book.customName + ".";
     } else if (book.type === "guild" && book.school) {
-      bookName = `${book.school} Spellbook ${book.schoolNumber}`;
+      bookName = `${book.school} Spellbook ${book.schoolNumber}.`;
     } else if (book.type === "guild") {
-      bookName = `Guild Spellbook`;
+      bookName = `Guild Spellbook.`;
     } else {
       // For personal spellbooks
       if (!firstPersonalBookSeen && book.personalNumber === 1) {
@@ -890,7 +871,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
       notesMsg += `${playerName} spends ${gp} gp${gpModText} and ${hours} hours${timeModText} scribing ${spellList} into ${bookName}\n`;
     }
 
-    logMsg += `\nScribed ${spellList} into ${bookName}.`;
+    logMsg += `\nScribed ${spellList} into ${bookName}`;
   });
 
   if(spellSlotCosts != "Spell Slot Costs:\n") {
@@ -900,8 +881,10 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
   // Collect schools scribed into personal books (for borrowing line)
   const borrowedBookSchools = new Set();
   const borrowedBadgeSchools = new Set();
-  // Collect guild spellbook names that were scribed from (personal books borrow from guild books)
+  // Collect guild spellbook names that were scribed into (the player borrows the guild book)
   const borrowedGuildBookNames = new Set();
+  // Track which schools are already represented by a borrowed guild book, to avoid duplicate entries
+  const guildBookSchools = new Set();
   // Collect borrowed scribing tools
   const borrowedTools = new Set();
 
@@ -921,6 +904,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     // Collect guild books that have spells scribed into them (the player borrows the guild book)
     if (book.type === "guild" && book.spells.length > 0) {
       borrowedGuildBookNames.add(getBookDisplayName(book));
+      if (book.school) guildBookSchools.add(book.school);
     }
     // Collect borrowed scribing tools (only if that tool's radio is also selected)
     const container = document.getElementById(`spellbook${book.id}`);
@@ -934,24 +918,24 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
     }
   });
 
-  const sortedBookSchools = [...borrowedBookSchools].sort();
+  // Filter out personal-book school entries already covered by a guild book of the same school
+  const filteredBookSchools = [...borrowedBookSchools].filter(s => !guildBookSchools.has(s)).sort();
   const sortedBadgeSchools = [...borrowedBadgeSchools].sort();
   const sortedGuildBookNames = [...borrowedGuildBookNames].sort();
   const sortedBorrowedTools = [...borrowedTools].sort();
 
   let borrowingParts = [];
 
-  if (sortedBookSchools.length > 0) {
-    const bookLabel = sortedBookSchools.length === 1
-      ? `${sortedBookSchools[0]} spellbook`
-      : formatList(sortedBookSchools) + " spellbooks";
+  if (filteredBookSchools.length > 0) {
+    const bookLabel = filteredBookSchools.length === 1
+      ? `${filteredBookSchools[0]} spellbook`
+      : formatList(filteredBookSchools) + " spellbooks";
     borrowingParts.push(bookLabel);
   }
 
   // Add guild spellbook names that were scribed into
   if (sortedGuildBookNames.length > 0) {
-    const guildBookLabel = formatList(sortedGuildBookNames);
-    borrowingParts.push(guildBookLabel);
+    borrowingParts.push(formatList(sortedGuildBookNames));
   }
 
   if (sortedBadgeSchools.length > 0) {

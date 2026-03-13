@@ -345,9 +345,14 @@ function updateModifierControls(book, container) {
     checkbox.checked = book.badges[school] || false;
     checkbox.addEventListener("change", () => {
       book.badges[school] = checkbox.checked;
-      if (!checkbox.checked) {
-        // Clear borrowed state when badge is unchecked
-        book.badgeBorrowed[school] = false;
+      if (checkbox.checked) {
+        // Default Started/Stays attached to true for guild books when badge is first enabled
+        if (book.badgeStartedAttached[school] === undefined) {
+          book.badgeStartedAttached[school] = book.type === "guild";
+        }
+        if (book.badgeStaysAttached[school] === undefined) {
+          book.badgeStaysAttached[school] = book.type === "guild";
+        }
       }
       updateModifierControls(book, container);
       calculateCosts();

@@ -1092,14 +1092,6 @@ function setupSpellAutocomplete(input, book, container) {
     highlightItem();
   }
 
-  function highlightItem() {
-    const items = dropdown.querySelectorAll("div");
-    const highlight = cs().getPropertyValue("--highlight").trim();
-    items.forEach((item, idx) => {
-      item.style.backgroundColor = idx === currentFocus ? highlight : "";
-    });
-  }
-
   input.addEventListener("input", function() {
     const val = this.value.toLowerCase();
     updatePosition();

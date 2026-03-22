@@ -77,9 +77,9 @@ function searchCraftables() {
     }).join('');
     if (totalGP > 0) {
       purchaseLogOutputDiv.innerHTML =
-        "Name: Drotar<br/>Buying: " +
+        `Name: ${playerName}<br/>Buying: ` +
         results.map(item => Object.keys(item)[0]).join(", ") +
-        "<br/>Sum: " + totalGP + "gp";
+        `<br/>Sum: ${totalGP}gp`;
     }
     else { purchaseLogOutputDiv.innerHTML = ""; }
   } else if (searchMaterials.length > 0) {

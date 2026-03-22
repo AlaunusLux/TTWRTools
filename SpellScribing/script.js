@@ -22,10 +22,10 @@ function createSpellbook(savedState = null) {
 
   container.innerHTML = `
     <div style="display: flex; align-items: center; gap: 10px;">
-      <button class="collapseBtn" style="font-size: 16px; line-height: 1; padding: 4px 8px; background: none; border: none; cursor: pointer; color: #333;">▼</button>
+      <button class="collapseBtn" style="font-size: 16px; line-height: 1; padding: 4px 8px; background: none; border: none; cursor: pointer; color: var(--text);">▼</button>
       <h3 class="bookHeading" style="margin: 0;">Personal Spellbook ${bookId}</h3>
       <button class="renameBtn" style="font-size: 12px; padding: 4px 8px;">Rename</button>
-      <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+      <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: var(--btn-danger); color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
     </div>
     <div class="bookBody">
       <input type="text" class="customName" placeholder="Custom name (optional)" style="width: 300px; margin-bottom: 10px; display: none;">
@@ -462,7 +462,8 @@ function updateModifierControls(book, container) {
   });
   
   // Update legacy savant dropdown
-  if (schools.length > 0) {
+  const isLegacy = document.getElementById("legacyCharacter").checked;
+  if (schools.length > 0 && isLegacy) {
     savantLabel.style.display = "block";
     
     // Store current selection before rebuilding
@@ -1024,7 +1025,7 @@ document.getElementById("discordMessages").innerHTML =
 // Helper: render a labelled message block with a Discord-style copy button
 function renderCopyBlock(id, labelHTML, text) {
   const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return `<div style="margin-bottom: 20px;"><div style="margin-bottom: 4px;">${labelHTML}</div><div style="position: relative;"><button onclick="navigator.clipboard.writeText(document.getElementById('copyText_${id}').innerText);const btn=this;btn.textContent='✓ Copied';btn.style.backgroundColor='#28a745';setTimeout(()=>{btn.textContent='⎘ Copy';btn.style.backgroundColor='';},2000);" style="position: absolute; top: 6px; right: 6px; padding: 3px 10px; font-size: 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">⎘ Copy</button><pre id="copyText_${id}" style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 6px; padding: 10px 70px 10px 10px; white-space: pre-wrap; word-break: break-word; font-family: monospace; margin: 0;">${escapedText}</pre></div></div>`;
+  return `<div style="margin-bottom: 20px;"><div style="margin-bottom: 4px;">${labelHTML}</div><div style="position: relative;"><button onclick="navigator.clipboard.writeText(document.getElementById('copyText_${id}').innerText);const btn=this;btn.textContent='✓ Copied';btn.style.backgroundColor='#28a745';setTimeout(()=>{btn.textContent='⎘ Copy';btn.style.backgroundColor='';},2000);" style="position: absolute; top: 6px; right: 6px; padding: 3px 10px; font-size: 12px; background-color: var(--btn-neutral); color: white; border: none; border-radius: 4px; cursor: pointer;">⎘ Copy</button><pre id="copyText_${id}" style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 6px; padding: 10px 70px 10px 10px; white-space: pre-wrap; word-break: break-word; font-family: monospace; margin: 0;">${escapedText}</pre></div></div>`;
 }
 
 // Helper: format a list with "and" before the last item
@@ -1093,8 +1094,7 @@ function setupSpellAutocomplete(input, book, container) {
 
   function highlightItem() {
     const items = dropdown.querySelectorAll("div");
-    const highlight = cs().getPropertyValue("--spell-bg").trim();
-    const surface = cs().getPropertyValue("--surface").trim();
+    const highlight = cs().getPropertyValue("--highlight").trim();
     items.forEach((item, idx) => {
       item.style.backgroundColor = idx === currentFocus ? highlight : "";
     });
@@ -1159,7 +1159,8 @@ function setupSpellAutocomplete(input, book, container) {
 function savePrefs() {
   sessionStorage.setItem("sitePrefs", JSON.stringify({
     playerName: document.getElementById("playerName").value,
-    darkMode: document.body.classList.contains("dark")
+    darkMode: document.body.classList.contains("dark"),
+    legacyCharacter: document.getElementById("legacyCharacter").checked
   }));
 }
 
@@ -1169,28 +1170,7 @@ function restorePrefs() {
   const prefs = JSON.parse(raw);
   if (prefs.playerName) document.getElementById("playerName").value = prefs.playerName;
   if (prefs.darkMode) enableDarkMode(false);
-}
-
-function refreshDropdownStyles() {
-  const cs = getComputedStyle(document.documentElement);
-  document.querySelectorAll(".autocomplete-items").forEach(el => {
-    el.style.border = `1px solid ${cs.getPropertyValue("--border").trim()}`;
-    el.style.backgroundColor = cs.getPropertyValue("--surface").trim();
-  });
-}
-
-function enableDarkMode(save = true) {
-  document.body.classList.add("dark");
-  document.getElementById("darkModeToggle").textContent = "☀ Light Mode";
-  refreshDropdownStyles();
-  if (save) savePrefs();
-}
-
-function disableDarkMode(save = true) {
-  document.body.classList.remove("dark");
-  document.getElementById("darkModeToggle").textContent = "🌙 Dark Mode";
-  refreshDropdownStyles();
-  if (save) savePrefs();
+  if (prefs.legacyCharacter) document.getElementById("legacyCharacter").checked = true;
 }
 
 // Persist scribing calc state to session storage
@@ -1267,8 +1247,18 @@ if (!restoreFromStorage()) {
 }
 document.getElementById("addBook").addEventListener("click", () => createSpellbook());
 document.getElementById("wipeSpells").addEventListener("click", wipeSpells);
-document.getElementById("darkModeToggle").addEventListener("click", () => {
-  document.body.classList.contains("dark") ? disableDarkMode() : enableDarkMode();
+document.getElementById("legacyCharacter").addEventListener("change", () => {
+  // If unchecked, clear any active legacy savant selections
+  if (!document.getElementById("legacyCharacter").checked) {
+    spellbooks.forEach(book => { book.legacySavant = null; });
+  }
+  savePrefs();
+  // Rebuild modifier controls for all books to show/hide savant dropdowns
+  spellbooks.forEach(book => {
+    const container = document.getElementById(`spellbook${book.id}`);
+    if (container) updateModifierControls(book, container);
+  });
+  calculateCosts();
 });
 document.getElementById("playerName").addEventListener("input", () => { savePrefs(); calculateCosts(); });
 document.getElementById("combinedModOutput").addEventListener("change", calculateCosts);

@@ -1,33 +1,3 @@
-// Injects the shared site header into #header-placeholder and wires dark mode.
-// Works with file:// and http:// alike — no fetch required.
-
-(function () {
-  const placeholder = document.getElementById("header-placeholder");
-  if (!placeholder) return;
- 
-  placeholder.innerHTML = `
-    <header id="site-header">
-      <div class="header-inner">
-        <span class="site-title">TTWR Tools</span>
-        <nav>
-          <a href="/SpellScribing">Spell Scribing</a>
-          <a href="/CraftingMaterialSearch">Crafting Material Search</a>
-        </nav>
-        <button id="darkModeToggle">🌙 Dark Mode</button>
-      </div>
-    </header>
-  `;
- 
-  // Set correct toggle label based on current state (darkMode.js may have already applied the class)
-  const toggle = document.getElementById("darkModeToggle");
-  if (document.body.classList.contains("dark")) toggle.textContent = "☀ Light Mode";
- 
-  toggle.addEventListener("click", () => {
-    document.body.classList.contains("dark") ? disableDarkMode() : enableDarkMode();
-  });
-})();
- 
-
 // darkMode.js — shared dark mode utilities for TTWR Tools.
 // Load this before loadHeader.js and any page script.
 
@@ -66,3 +36,60 @@ function disableDarkMode(save = true) {
     }
   } catch (e) {}
 })();
+
+// Injects the shared site header into #header-placeholder and wires dark mode.
+
+var playerName = sessionStorage.getItem("sitePrefs") ? JSON.parse(sessionStorage.getItem("sitePrefs")).playerName || "Player" : "Player";
+
+(function () {
+  const placeholder = document.getElementById("header-placeholder");
+  if (!placeholder) return;
+ 
+  placeholder.innerHTML = `
+    <header id="site-header">
+      <div class="header-inner">
+        <span class="site-title">TTWR Tools</span>
+        <nav>
+          <a href="/TTWRTools/SpellScribing">Spell Scribing</a>
+          <a href="/TTWRTools/CraftingMaterialSearch">Crafting Material Search</a>
+        </nav>
+        <span>Hi, <span id="playerNameDisplay">${playerName}</span>! <a href="/TTWRTools/Profile" style="color:#a8d8ea;">⚙️ Edit Profile</a></span>
+        <button id="darkModeToggle">🌙 Dark Mode</button>
+      </div>
+    </header>
+  `;
+ 
+  // Set correct toggle label based on current state (darkMode.js may have already applied the class)
+  const toggle = document.getElementById("darkModeToggle");
+  if (document.body.classList.contains("dark")) toggle.textContent = "☀ Light Mode";
+ 
+  toggle.addEventListener("click", () => {
+    document.body.classList.contains("dark") ? disableDarkMode() : enableDarkMode();
+  });
+})();
+
+// Save/restore site-wide preferences (player name, dark mode)
+function savePrefs() {
+  sessionStorage.setItem("sitePrefs", JSON.stringify({
+    playerName: document.getElementById("playerName") ? document.getElementById("playerName").value : null,
+    darkMode: document.body.classList.contains("dark"),
+    legacyCharacter: document.getElementById("legacyCharacter") ? document.getElementById("legacyCharacter").checked : null
+  }));
+    document.getElementById("playerNameDisplay").textContent = document.getElementById("playerName") ? document.getElementById("playerName").value : playerName;
+
+}
+
+function restorePrefs() {
+  const raw = sessionStorage.getItem("sitePrefs");
+  if (!raw) return;
+  const prefs = JSON.parse(raw);
+  if (prefs.playerName) {
+    playerName = prefs.playerName;
+    document.getElementById("playerNameDisplay").textContent = prefs.playerName;
+    document.getElementById("playerName").value = prefs.playerName;
+  }
+  if (prefs.darkMode) enableDarkMode(false);
+  if (prefs.legacyCharacter) document.getElementById("legacyCharacter").checked = true;
+}
+ 
+

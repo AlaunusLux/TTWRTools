@@ -1018,9 +1018,9 @@ logMsg = logMsg.replace(/, $/, '');
 logMsg += `\nNotes-and-pings link: [x]\n${totalGuildFee > 0 ? "Trading link: [x]\n" : ""}<@&1454706630934401169>`;
 
 document.getElementById("discordMessages").innerHTML =
-  renderCopyBlock("notes-and-pings", `<a href="https://discord.com/channels/813968500250902538/815444093442326549" target="_blank">#notes-and-pings:</a>`, notesMsg) +
-  renderCopyBlock("trading", "#trading:", tradingMsg) +
-  renderCopyBlock("scribing-log", "#scribing-log:", logMsg);
+  renderCopyBlock("notes-and-pings", `<a href="discord://discord.com/channels/813968500250902538/815444093442326549">#notes-and-pings:</a>`, notesMsg) +
+  renderCopyBlock("trading", `<a href="discord://discord.com/channels/813968500250902538/857794594913779742">#trading:</a>`, tradingMsg) +
+  renderCopyBlock("scribing-log", `<a href="discord://discord.com/channels/1451869478894964748/1456581480913309718">#scribing-log:</a>`, logMsg);
   }
 // Helper: render a labelled message block with a Discord-style copy button
 function renderCopyBlock(id, labelHTML, text) {
@@ -1153,24 +1153,6 @@ function setupSpellAutocomplete(input, book, container) {
 
   window.addEventListener("resize", updatePosition);
   window.addEventListener("scroll", updatePosition);
-}
-
-// Save/restore site-wide preferences (player name, dark mode)
-function savePrefs() {
-  sessionStorage.setItem("sitePrefs", JSON.stringify({
-    playerName: document.getElementById("playerName").value,
-    darkMode: document.body.classList.contains("dark"),
-    legacyCharacter: document.getElementById("legacyCharacter").checked
-  }));
-}
-
-function restorePrefs() {
-  const raw = sessionStorage.getItem("sitePrefs");
-  if (!raw) return;
-  const prefs = JSON.parse(raw);
-  if (prefs.playerName) document.getElementById("playerName").value = prefs.playerName;
-  if (prefs.darkMode) enableDarkMode(false);
-  if (prefs.legacyCharacter) document.getElementById("legacyCharacter").checked = true;
 }
 
 // Persist scribing calc state to session storage

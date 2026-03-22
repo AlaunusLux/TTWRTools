@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Profile</title>
+    <link rel="stylesheet" href="../SiteTools/site.css">
+  </head>
+  <body>
+    <div id="header-placeholder"></div>
+    <h1>Profile</h1>
+    <div class="player-info">
+        <div style="flex: 1; min-width: 0;">
+            <div style="margin-bottom: 8px;">
+                <label for="playerName" style="display: inline; font-weight: bold; margin-right: 10px;">Player Name:</label>
+                <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
+            </div>
+            <label>
+            <input type="checkbox" id="legacyCharacter"> Legacy character
+            </label>
+        </div>
+      </div>
+    </body>
+      <script src="../SiteTools/loadHeader.js"></script>
+  <script src="script.js"></script>
+  <script>
+    document.getElementById("playerName").addEventListener("input", () => { savePrefs(); });
+    document.getElementById("legacyCharacter").addEventListener("change", () => { savePrefs(); });
+  </script>
+</html>

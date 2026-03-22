@@ -36,12 +36,15 @@
 
     <!-- Right column: output, sticky so it stays in view while scrolling -->
     <div class="layout-right" style="width: 380px; flex-shrink: 0; position: sticky; top: 72px; max-height: calc(100vh - 92px); overflow-y: auto;">
-      <div id="output"></div>
+      <div id="output">
+        <label>
+          <input type="checkbox" id="combinedModOutput" checked> Combined modifier output
+        </label>
+      </div>
       <div id="discordMessages"></div>
     </div>
 
   </div>
-  <script src="../SiteTools/darkMode.js"></script>
   <script src="../SiteTools/loadHeader.js"></script>
   <script src="script.js"></script>
 </body>

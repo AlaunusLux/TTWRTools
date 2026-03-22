@@ -1009,7 +1009,7 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
 
   tradingMsg = `Name: ${playerName}\n${borrowingLine}`
   if(totalGuildFee > 0) {
-    tradingMsg += `Paying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum armory <@171484787482165249>\n`;
+    tradingMsg += `Paying: ${totalGuildFee} gp spell scribing fee\nTo: Discipuli Arcanum <@171484787482165249>\n`;
   } else {
     tradingMsg += `From: Discipuli Arcanum armory <@171484787482165249>\n`;}
 

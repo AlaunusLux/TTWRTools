@@ -1,0 +1,155 @@
+/* site.css — shared styles for all TTWR Tools pages */
+
+:root {
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --border: #cccccc;
+  --text: #333333;
+  --text-muted: #555555;
+  --heading: #2c3e50;
+  --spell-bg: #ecf0f1;
+  --highlight: #cce5ff;
+  --output-bg: #f4f4f4;
+  --output-border: #dddddd;
+  --input-bg: #ffffff;
+  --btn-primary: #3498db;
+  --btn-primary-hover: #2980b9;
+  --btn-danger: #dc3545;
+  --btn-danger-hover: #c0392b;
+  --btn-warn: #e67e22;
+  --btn-warn-hover: #d35400;
+  --btn-neutral: #6c757d;
+  --btn-neutral-hover: #5a6268;
+  --header-bg: #2c3e50;
+  --header-text: #ffffff;
+  --header-link: #a8d8ea;
+  --header-link-hover: #ffffff;
+}
+
+body.dark {
+  --bg: #1e1e1e;
+  --surface: #2a2a2a;
+  --border: #484848;
+  --text: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --heading: #cccccc;
+  --spell-bg: #303030;
+  --highlight: #1a4a6e;
+  --output-bg: #222222;
+  --output-border: #484848;
+  --input-bg: #333333;
+  --btn-primary: #2271a3;
+  --btn-primary-hover: #1a5a85;
+  --btn-danger: #a32b38;
+  --btn-danger-hover: #882330;
+  --btn-warn: #a85a18;
+  --btn-warn-hover: #8a4912;
+  --btn-neutral: #555e66;
+  --btn-neutral-hover: #444c53;
+  --header-bg: #1a1a1a;
+  --header-text: #e0e0e0;
+  --header-link: #90c0d8;
+  --header-link-hover: #e0e0e0;
+}
+
+/* Base */
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+h1 { color: var(--text); text-align: center; }
+
+label { display: block; margin: 8px 0; }
+input[type="checkbox"] { margin-right: 8px; }
+
+input[type="number"],
+input[type="text"],
+select {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+input[type="number"] { width: 80px; padding: 4px; }
+input[type="text"]   { width: 300px; padding: 6px; margin: 10px 0; }
+select               { padding: 3px; }
+
+/* Buttons */
+button {
+  background-color: var(--btn-primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 5px;
+}
+button:hover       { background-color: var(--btn-primary-hover); }
+.btn-danger        { background-color: var(--btn-danger) !important; }
+.btn-danger:hover  { background-color: var(--btn-danger-hover) !important; }
+.btn-warn          { background-color: var(--btn-warn) !important; }
+.btn-warn:hover    { background-color: var(--btn-warn-hover) !important; }
+.btn-neutral       { background-color: var(--btn-neutral) !important; }
+.btn-neutral:hover { background-color: var(--btn-neutral-hover) !important; }
+
+/* Header */
+#site-header {
+  background: var(--header-bg);
+  color: var(--header-text);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 52px;
+}
+.site-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--header-text);
+  white-space: nowrap;
+}
+nav { display: flex; gap: 16px; flex: 1; }
+nav a { color: var(--header-link); text-decoration: none; font-size: 0.95em; }
+nav a:hover { color: var(--header-link-hover); text-decoration: underline; }
+
+#darkModeToggle {
+  background: transparent;
+  border: 1px solid var(--header-link);
+  color: var(--header-text);
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0;
+  white-space: nowrap;
+}
+#darkModeToggle:hover { background: rgba(255,255,255,0.1); }
+
+/* Autocomplete dropdown */
+.autocomplete-items div {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.autocomplete-items div:hover { background-color: var(--highlight); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .layout-columns { flex-direction: column !important; }
+  .layout-right { width: 100% !important; position: static !important; max-height: none !important; }
+}

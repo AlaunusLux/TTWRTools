@@ -1,0 +1,78 @@
+/* spellScribing.css — styles specific to the Spell Scribing Calculator page */
+
+/* Player info panel */
+.player-info {
+  background: var(--surface);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.player-info input[type="text"] {
+  padding: 6px;
+  width: 200px;
+}
+
+/* Spellbook cards */
+#spellbooksContainer { margin-bottom: 20px; }
+
+.spellbook {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  color: var(--text);
+}
+.spellbook h3 { margin-top: 0; color: var(--heading); }
+
+/* Spell list chips */
+.spellList { padding-left: 0; }
+.spellList li { padding: 5px; margin: 3px 0; background-color: var(--spell-bg); border-radius: 4px; }
+.spell-chip { background-color: var(--spell-bg); color: var(--text); }
+.delete-spell { background-color: var(--btn-danger); padding: 2px 8px; font-size: 12px; }
+.delete-spell:hover { background-color: var(--btn-danger-hover); }
+
+/* Badge sub-row (Started/Stays attached/Borrowed) */
+.badge-state-row { color: var(--text-muted); }
+
+/* Output panels */
+#output, #discordMessages {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  font-family: monospace;
+  color: var(--text);
+}
+pre {
+  background: var(--output-bg) !important;
+  border-color: var(--output-border) !important;
+  color: var(--text) !important;
+}
+
+/* Badge movement plan */
+.badge-plan-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin-top: 15px;
+  border-radius: 8px;
+}
+.badge-plan-heading {
+  margin-top: 0;
+  color: var(--heading);
+  cursor: pointer;
+  user-select: none;
+}
+.badge-plan-scribing { color: var(--btn-primary); font-weight: bold; }
+.badge-plan-note     { color: var(--text-muted); font-style: italic; }
+.badge-plan-cost     { color: var(--btn-danger); font-weight: bold; }
+.badge-plan-slots {
+  margin-top: 15px;
+  padding: 10px;
+  background: var(--spell-bg);
+  border-radius: 4px;
+}

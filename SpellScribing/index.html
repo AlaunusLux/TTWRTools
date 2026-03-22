@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spell Scribing Calculator – TTWR Tools</title>
+  <link rel="stylesheet" href="../SiteTools/site.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <h1>D&amp;D Spell Scribing Calculator</h1>
+
+  <div class="layout-columns" style="display: flex; gap: 24px; align-items: flex-start;">
+
+    <!-- Left column: controls and spellbooks -->
+    <div style="flex: 1; min-width: 0;">
+      <div class="player-info">
+        <div style="margin-bottom: 8px;">
+          <label for="playerName" style="display: inline; font-weight: bold; margin-right: 10px;">Player Name:</label>
+          <input type="text" id="playerName" value="Drotar" placeholder="Enter player name">
+        </div>
+        <label>
+          <input type="checkbox" id="combinedModOutput" checked> Combined modifier output
+        </label>
+        <label>
+          <input type="checkbox" id="legacyCharacter"> Legacy character
+        </label>
+      </div>
+
+      <button id="addBook">+ Add Spellbook</button>
+      <button id="wipeSpells" class="btn-warn">🗑 Wipe All Spells</button>
+      <div id="spellbooksContainer"></div>
+    </div>
+
+    <!-- Right column: output, sticky so it stays in view while scrolling -->
+    <div class="layout-right" style="width: 380px; flex-shrink: 0; position: sticky; top: 72px; max-height: calc(100vh - 92px); overflow-y: auto;">
+      <div id="output"></div>
+      <div id="discordMessages"></div>
+    </div>
+
+  </div>
+  <script src="../SiteTools/darkMode.js"></script>
+  <script src="../SiteTools/loadHeader.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

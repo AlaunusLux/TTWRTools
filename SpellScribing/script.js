@@ -1170,12 +1170,12 @@ function saveToStorage() {
       return { ...book, tool, manualLevels };
     })
   };
-  sessionStorage.setItem("scribingCalc", JSON.stringify(state));
+  localStorage.setItem("scribingCalc", JSON.stringify(state));
 }
 
 // Restore all state from session storage
 function restoreFromStorage() {
-  const raw = sessionStorage.getItem("scribingCalc");
+  const raw = localStorage.getItem("scribingCalc");
   if (!raw) return false;
   const state = JSON.parse(raw);
 

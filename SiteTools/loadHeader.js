@@ -29,7 +29,7 @@ function disableDarkMode(save = true) {
 // Pages with page-specific prefs (playerName etc.) handle their own restorePrefs.
 (function applyDarkModeEarly() {
   try {
-    const prefs = JSON.parse(sessionStorage.getItem("sitePrefs") || "{}");
+    const prefs = JSON.parse(localStorage.getItem("sitePrefs") || "{}");
     if (prefs.darkMode) {
       document.body.classList.add("dark");
       // Toggle text will be set once the header is injected by loadHeader.js
@@ -39,7 +39,7 @@ function disableDarkMode(save = true) {
 
 // Injects the shared site header into #header-placeholder and wires dark mode.
 
-var playerName = sessionStorage.getItem("sitePrefs") ? JSON.parse(sessionStorage.getItem("sitePrefs")).playerName || "Player" : "Player";
+var playerName = localStorage.getItem("sitePrefs") ? JSON.parse(localStorage.getItem("sitePrefs")).playerName || "Player" : "Player";
 
 (function () {
   const placeholder = document.getElementById("header-placeholder");
@@ -70,7 +70,7 @@ var playerName = sessionStorage.getItem("sitePrefs") ? JSON.parse(sessionStorage
 
 // Save/restore site-wide preferences (player name, dark mode)
 function savePrefs() {
-  sessionStorage.setItem("sitePrefs", JSON.stringify({
+  localStorage.setItem("sitePrefs", JSON.stringify({
     playerName: document.getElementById("playerName") ? document.getElementById("playerName").value : null,
     darkMode: document.body.classList.contains("dark"),
     legacyCharacter: document.getElementById("legacyCharacter") ? document.getElementById("legacyCharacter").checked : null
@@ -80,7 +80,7 @@ function savePrefs() {
 }
 
 function restorePrefs() {
-  const raw = sessionStorage.getItem("sitePrefs");
+  const raw = localStorage.getItem("sitePrefs");
   if (!raw) return;
   const prefs = JSON.parse(raw);
   if (prefs.playerName) {

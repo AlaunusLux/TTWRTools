@@ -133,12 +133,12 @@ function saveToStorage() {
     metal: document.getElementById("metal").checked,
     searchText: document.getElementById("search-keys").value
   };
-  sessionStorage.setItem("materialSearch", JSON.stringify(state));
+  localStorage.setItem("materialSearch", JSON.stringify(state));
 }
 
 // Restore all state from session storage
 function restoreFromStorage() {
-  const raw = sessionStorage.getItem("materialSearch");
+  const raw = localStorage.getItem("materialSearch");
   if (!raw) return false;
   const state = JSON.parse(raw);
 

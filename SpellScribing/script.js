@@ -1009,9 +1009,9 @@ function generateDiscordMessages(totalGP, totalHours, totalGuildFee, spellSlotCo
 
   tradingMsg = `Name: ${playerName}\n${borrowingLine}`
   if(totalGuildFee > 0) {
-    tradingMsg += `Paying: ${totalGuildFee} gp spell scribing fee\nTo: <@&1467171079981240522>\n`;
+    tradingMsg += `Paying: ${totalGuildFee} gp spell scribing fee\nTo: <@171484787482165249>\n`;
   } else {
-    tradingMsg += `From: <@&1467171079981240522>\n`;}
+    tradingMsg += `From: <@171484787482165249>\n`;}
 
 
 logMsg = logMsg.replace(/, $/, '');

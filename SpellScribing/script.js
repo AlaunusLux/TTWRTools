@@ -25,7 +25,7 @@ function createSpellbook(savedState = null) {
       <button class="collapseBtn" style="font-size: 16px; line-height: 1; padding: 4px 8px; background: none; border: none; cursor: pointer; color: var(--text);">▼</button>
       <h3 class="bookHeading" style="margin: 0;">Personal Spellbook ${bookId}</h3>
       <button class="renameBtn" style="font-size: 12px; padding: 4px 8px;">Rename</button>
-      <button class="deleteBtn" style="font-size: 12px; padding: 4px 8px; background-color: var(--btn-danger); color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+      <button class="deleteBtn btn-danger" style="font-size: 12px; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; color: white;">Delete</button>
     </div>
     <div class="bookBody">
       <input type="text" class="customName" placeholder="Custom name (optional)" style="width: 300px; margin-bottom: 10px; display: none;">
@@ -681,7 +681,7 @@ function calculateCosts() {
   
   if (badgePlan.movements.length > 0 && hasSlotCosts) {
     const toggleId = 'badgePlanToggle_' + Date.now();
-    badgePlanHTML = `<div style="background: #fff3cd; padding: 15px; margin-top: 15px; border-radius: 8px; border: 1px solid #ffc107;"><h3 style="margin-top: 0; color: #856404; cursor: pointer; user-select: none;" onclick="
+    badgePlanHTML = `<div class="badge-plan-box"><h3 class="badge-plan-heading" onclick="
         const content = document.getElementById('badgePlanContent');
         const toggle = document.getElementById('${toggleId}');
         if (content.style.display === 'none') {
@@ -695,15 +695,15 @@ function calculateCosts() {
     
     badgePlan.movements.forEach(move => {
       if (move.isScribing) {
-        badgePlanHTML += `<li style="color: #0066cc; font-weight: bold; margin: 8px 0;">${move.action}</li>`;
+        badgePlanHTML += `<li class="badge-plan-scribing" style="margin: 8px 0;">${move.action}</li>`;
       } else if (move.slotLevel === 0) {
-        badgePlanHTML += `<li style="color: #666; font-style: italic; margin: 8px 0;">${move.action} ${move.description || ''}</li>`;
+        badgePlanHTML += `<li class="badge-plan-note" style="margin: 8px 0;">${move.action} ${move.description || ''}</li>`;
       } else {
-        badgePlanHTML += `<li style="margin: 8px 0;">${move.action} <span style="color: #d9534f; font-weight: bold;">${move.description}</span></li>`;
+        badgePlanHTML += `<li style="margin: 8px 0;">${move.action} <span class="badge-plan-cost">${move.description}</span></li>`;
       }
     });
     
-    badgePlanHTML += `</ol><div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 4px;"><strong>Spell Slot Costs:</strong><br/>`;
+    badgePlanHTML += `</ol><div class="badge-plan-slots"><strong>Spell Slot Costs:</strong><br/>`;
     
     const sortedLevels = Object.keys(badgePlan.slotCosts).sort((a, b) => a - b);
     sortedLevels.forEach(level => {

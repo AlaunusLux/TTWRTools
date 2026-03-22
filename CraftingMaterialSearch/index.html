@@ -1,92 +1,72 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Materials Search</title>
-    <link rel="stylesheet" href="../SiteTools/site.css">
-  </head>
-  <body>
-    <div id="header-placeholder"></div>
-    <h1>Crafting Material Search</h1>
-    <fieldset>
-      <legend>Choose crafting materials to display:</legend>
 
-      <div>
-        <input
-          type="checkbox"
-          id="reagents"
-          name="reagents"
-          onchange="searchCraftables()"
-        />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>Materials Search</title>
+  <link rel="stylesheet" href="../SiteTools/site.css">
+</head>
+
+<body>
+  <div id="header-placeholder"></div>
+  <h1>Crafting Material Search</h1>
+  <fieldset>
+    <legend>Choose crafting materials to display:</legend>
+
+    <div>
+      <label>
+        <input type="checkbox" id="reagents" name="reagents" onchange="searchCraftables()" />
         Reagents
-      </div>
+      </label>
+    </div>
 
-      <div>
-        <input
-          type="checkbox"
-          id="wood"
-          name="wood"
-          onchange="searchCraftables()"
-        />
+    <div>
+      <label>
+        <input type="checkbox" id="wood" name="wood" onchange="searchCraftables()" />
         Wood
-      </div>
+      </label>
+    </div>
 
-      <div>
-        <input
-          type="checkbox"
-          id="magica"
-          name="magica"
-          onchange="searchCraftables()"
-        />
+    <div>
+      <label>
+        <input type="checkbox" id="magica" name="magica" onchange="searchCraftables()" />
         Magica
-      </div>
+      </label>
+    </div>
 
-      <div>
-        <input
-          type="checkbox"
-          id="leather"
-          name="leather"
-          onchange="searchCraftables()"
-        />
+    <div>
+      <label>
+        <input type="checkbox" id="leather" name="leather" onchange="searchCraftables()" />
         Leather
-      </div>
+      </label>
+    </div>
 
-      <div>
-        <input
-          type="checkbox"
-          id="cloth"
-          name="cloth"
-          onchange="searchCraftables()"
-        />
+    <div>
+      <label>
+        <input type="checkbox" id="cloth" name="cloth" onchange="searchCraftables()" />
         Cloth
-      </div>
+      </label>
+    </div>
 
-      <div>
-        <input
-          type="checkbox"
-          id="metal"
-          name="metal"
-          onchange="searchCraftables()"
-        />
+    <div>
+      <label>
+        <input type="checkbox" id="metal" name="metal" onchange="searchCraftables()" />
         Metal
-      </div>
-    </fieldset>
-    <hr />
-    <div><label>Paste Shop Data here:</label></div>
-    <textarea
-      id="search-keys"
-      rows="10"
-      cols="60"
-      onkeyup="searchCraftables()"
-    ></textarea>
-    <div id="results-display"></div>
-    <br />
-    <div id="purchase-log-output"></div>
-    <br /><br />
-    <div id="unmatched-items"></div>
-    
-    <script src="../SiteTools/loadHeader.js"></script>
-    <script src="script.js"></script>
-  </body>
+      </label>
+    </div>
+  </fieldset>
+  <hr />
+  <div><label>Paste Shop Data here:</label></div>
+  <textarea id="search-keys" rows="10" cols="60" onkeyup="searchCraftables()"></textarea>
+  <div id="results-display"></div>
+  <br />
+  <div id="purchase-log-output"></div>
+  <br /><br />
+  <div id="unmatched-items"></div>
+
+  <script src="../SiteTools/loadHeader.js"></script>
+  <script src="script.js"></script>
+</body>
+
 </html>

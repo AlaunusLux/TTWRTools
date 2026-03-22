@@ -1,4 +1,5 @@
 function searchCraftables() {
+  saveToStorage();
   var rawLines = document.getElementById("search-keys").value
                   .split("\n") 
                   .map(line => line.trim()) 
@@ -122,10 +123,40 @@ function searchCraftables() {
 
 }
 
+function saveToStorage() {
+  const state = {
+    reagents: document.getElementById("reagents").checked,
+    wood: document.getElementById("wood").checked,
+    magica: document.getElementById("magica").checked,
+    leather: document.getElementById("leather").checked,
+    cloth: document.getElementById("cloth").checked,
+    metal: document.getElementById("metal").checked,
+    searchText: document.getElementById("search-keys").value
+  };
+  sessionStorage.setItem("materialSearch", JSON.stringify(state));
+}
+
+// Restore all state from session storage
+function restoreFromStorage() {
+  const raw = sessionStorage.getItem("materialSearch");
+  if (!raw) return false;
+  const state = JSON.parse(raw);
+
+  document.getElementById("reagents").checked = state.reagents ?? true;
+  document.getElementById("wood").checked = state.wood ?? true;
+  document.getElementById("magica").checked = state.magica ?? true;
+  document.getElementById("leather").checked = state.leather ?? true;
+  document.getElementById("cloth").checked = state.cloth ?? true;
+  document.getElementById("metal").checked = state.metal ?? true;
+  document.getElementById("search-keys").value = state.searchText ?? "";
+
+  }
+
+
 document.addEventListener("DOMContentLoaded", function(event) {
     searchCraftables()
 });
-
+restoreFromStorage()
 
 var materialMap = {
   reagents: [
